@@ -6,11 +6,10 @@ def normal_from_triangle(triangles):
     return np.cross(AB, AC)
 
 def intersection_plane_line(triagles_plane_points, triangles_plane_normals, vectors):
-    tri_p_n_long = triangles_plane_normals[np.newaxis, :, :]
     po_qo = points[:, np.newaxis, :] - triagles_plane_points[np.newaxis, :, :] # (Strahl, Ebene, Punkt)
-    n_po_qo = np.einsum("ijk, ijk->ij", po_qo, tri_p_n_long)[..., np.newaxis] * -1
+    n_po_qo = np.einsum("ijk, jk->ij", po_qo, triangles_plane_normals)[..., np.newaxis] * -1
 
-    n_p = np.einsum("ijk, ijk->ij", vectors[:, np.newaxis, :], tri_p_n_long)[..., np.newaxis]
+    n_p = np.einsum("ik, jk->ij", vectors, triangles_plane_normals)[..., np.newaxis]
     
     t = n_po_qo / n_p
     return t
@@ -22,7 +21,6 @@ def inside_out_test(triangles, normals, points):
     line_vectors = offset1 - offset2 # for each Point of A triangle the opposite Site (line to P shouldn't cross)
     line_normals = np.cross(line_vectors, normals[:, np.newaxis])
 
-    print(np.broadcast_to(line_normals[np.newaxis, :, :, :], (points[:, :, np.newaxis, :].shape[0])))
     print(line_normals[np.newaxis, :, :, :].shape)
     print(points[:, :, np.newaxis, :].shape)
     merged = np.concatenate([line_normals[np.newaxis, :, :, :], points[:, :, np.newaxis, :]], axis=0)
@@ -52,5 +50,5 @@ if __name__ == "__main__":
 
     # Schnittpunkte 
     intersections = intersection_plane_line(triagles_plane_points, triangles_plane_normals, vectors)
-
-    inside_out_test(triangles, triangles_plane_normals, intersections)
+    print(intersections)
+    # inside_out_test(triangles, triangles_plane_normals, intersections)
