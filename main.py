@@ -15,8 +15,19 @@ def intersection_plane_line(triagles_plane_points, triangles_plane_normals, vect
     t = n_po_qo / n_p
     return t
 
-def inside_out(triangles, inter_points):
-    print("todo")
+def inside_out_test(triangles, normals, points):
+    offset1 = np.roll(triangles, -1, axis=0) # [b, c, a]
+    offset2 = np.roll(triangles, -2, axis=0) # [c, b, a]
+    
+    line_vectors = offset1 - offset2 # for each Point of A triangle the opposite Site (line to P shouldn't cross)
+    line_normals = np.cross(line_vectors, normals[:, np.newaxis])
+
+    print(np.broadcast_to(line_normals[np.newaxis, :, :, :], (points[:, :, np.newaxis, :].shape[0])))
+    print(line_normals[np.newaxis, :, :, :].shape)
+    print(points[:, :, np.newaxis, :].shape)
+    merged = np.concatenate([line_normals[np.newaxis, :, :, :], points[:, :, np.newaxis, :]], axis=0)
+
+    print(merged)
 
 if __name__ == "__main__":
     #Strahlen
@@ -42,6 +53,5 @@ if __name__ == "__main__":
 
     # Schnittpunkte 
     intersections = intersection_plane_line(triagles_plane_points, triangles_plane_normals, vectors)
-    inter_points = vectors[:, np.newaxis, :] * intersections + points[:, np.newaxis, :]
 
-    # inside out
+    inside_out_test(triangles, triangles_plane_normals, intersections)
