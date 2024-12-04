@@ -1,4 +1,5 @@
 import numpy as np
+from numpy import newaxis as na
 
 
 def normal_from_triangle(triangles):
@@ -39,10 +40,10 @@ def intersection_plane_line(triangles_plane_points, triangles_plane_normals, lin
         (m, n, 1)(line, triangle, scalar)
     """
     
-    po_qo = line_points[:, np.newaxis, :] - triangles_plane_points[np.newaxis, :, :] # (Strahl, Ebene, Punkt)
-    n_po_qo = np.einsum("ijk, jk->ij", po_qo, triangles_plane_normals)[..., np.newaxis] * -1
+    po_qo = line_points[:, na, :] - triangles_plane_points[na, :, :] # (Strahl, Ebene, Punkt)
+    n_po_qo = np.einsum("ijk, jk->ij", po_qo, triangles_plane_normals)[..., na] * -1
 
-    n_p = np.einsum("ik, jk->ij", line_vectors, triangles_plane_normals)[..., np.newaxis]
+    n_p = np.einsum("ik, jk->ij", line_vectors, triangles_plane_normals)[..., na]
     
     t = n_po_qo / n_p
     return t
@@ -51,15 +52,18 @@ def inside_out_test(triangles, normals, points):
     offset1 = np.roll(triangles, -1, axis=0) # [b, c, a]
     offset2 = np.roll(triangles, -2, axis=0) # [c, b, a]
     
-    line_vectors = offset1 - offset2 # for each Point of A triangle the opposite Site (line to P shouldn't cross)
-    line_normals = np.cross(line_vectors, normals[:, np.newaxis])
+    line_vectors = offset1 - offset2 # for each Point of the triangle the opposite side 
+    line_normals = np.cross(line_vectors, normals[:, na]) # normal of the opposite side
 
-    line_normals_broadcast = np.broadcast_to()
-    print(line_normals[np.newaxis, :, :, :].shape)
-    print(points[:, :, np.newaxis, :].shape)
-    merged = np.concatenate([line_normals[np.newaxis, :, :, :], points[:, :, np.newaxis, :]], axis=0)
+    line_normals_exp = line_normals[na, :, :, na, :]
+    points_exp = points[:, :, na, na, :]
 
-    print(merged)
+    line_normals_br = np.broadcast_to(line_normals_exp, ((points_exp.shape[0],) + line_normals_exp.shape[1:5])) #broadcast to number of intersections
+    points_br = np.broadcast_to(points_exp, (points_exp.shape[0:2] + (line_normals_exp.shape[2],) + points_exp.shape[3:5]))
+    print(points_br.shape)
+    print(line_normals_br.shape)
+    merged = np.concatenate([line_normals_br, points_br], axis=-2)
+
 
 if __name__ == "__main__":
     #Strahlen
@@ -84,6 +88,6 @@ if __name__ == "__main__":
     triangles_plane_points = triangles[:, 0]
     triangles_plane_normals = normal_from_triangle(triangles)
     # Schnittpunkte 
-    intersections = intersection_plane_line(triangles_plane_points, triangles_plane_normals, line_vectors, line_points)
-    print(intersections.shape)
-    # inside_out_test(triangles, triangles_plane_normals, intersections)
+    inter_scalars = intersection_plane_line(triangles_plane_points, triangles_plane_normals, line_vectors, line_points)
+    inter_points = line_points[:, na, :] + (line_vectors[:, na, :] * inter_scalars)
+    inside_out_test(triangles, triangles_plane_normals, inter_points)
