@@ -15,6 +15,9 @@ def intersection_plane_line(triagles_plane_points, triangles_plane_normals, vect
     t = n_po_qo / n_p
     return t
 
+def inside_out(triangles, inter_points):
+    print("todo")
+
 if __name__ == "__main__":
     #Strahlen
     points = np.array([
@@ -35,6 +38,10 @@ if __name__ == "__main__":
 
     triagles_plane_points = triangles[:, 0]
     triangles_plane_normals = normal_from_triangle(triangles)
+    print(triangles_plane_normals)
 
     # Schnittpunkte 
     intersections = intersection_plane_line(triagles_plane_points, triangles_plane_normals, vectors)
+    inter_points = vectors[:, np.newaxis, :] * intersections + points[:, np.newaxis, :]
+
+    # inside out
