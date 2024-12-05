@@ -55,15 +55,15 @@ def inside_out_test(triangles, normals, points):
     line_vectors = offset1 - offset2 # for each Point of the triangle the opposite side 
     line_normals = np.cross(line_vectors, normals[:, na]) # normal of the opposite side
 
+
     line_normals_exp = line_normals[na, :, :, na, :]
+    tri_points_exp = triangles[na, :, :, na, :]
     points_exp = points[:, :, na, na, :]
 
-    line_normals_br = np.broadcast_to(line_normals_exp, ((points_exp.shape[0],) + line_normals_exp.shape[1:5])) #broadcast to number of intersections
+    tri_points_br = np.broadcast_to(tri_points_exp, ((points_exp.shape[0],) + tri_points_exp.shape[1:5])) #broadcast to number of intersections
     points_br = np.broadcast_to(points_exp, (points_exp.shape[0:2] + (line_normals_exp.shape[2],) + points_exp.shape[3:5]))
-    print(points_br.shape)
-    print(line_normals_br.shape)
-    merged = np.concatenate([line_normals_br, points_br], axis=-2)
 
+    merged = np.concatenate([tri_points_br, points_br], axis=-2) # (n, m, 3, 2, 3) (tri, lin, vert, [P_tri, P_lin], xyz)
 
 if __name__ == "__main__":
     #Strahlen
