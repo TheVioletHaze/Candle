@@ -64,6 +64,9 @@ def inside_out_test(triangles, normals, points):
     points_br = np.broadcast_to(points_exp, (points_exp.shape[0:2] + (line_normals_exp.shape[2],) + points_exp.shape[3:5]))
 
     merged = np.concatenate([tri_points_br, points_br], axis=-2) # (n, m, 3, 2, 3) (tri, lin, vert, [P_tri, P_lin], xyz)
+    print(line_normals.shape)
+    print(merged.shape)
+    # merged_dot = np.einsum("", merged, line_normals)
 
 if __name__ == "__main__":
     #Strahlen
