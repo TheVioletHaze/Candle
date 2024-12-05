@@ -49,8 +49,24 @@ def intersection_plane_line(triangles_plane_points, triangles_plane_normals, lin
     return t
 
 def inside_out_test(triangles, normals, points):
-    offset1 = np.roll(triangles, -1, axis=0) # [b, c, a]
-    offset2 = np.roll(triangles, -2, axis=0) # [c, b, a]
+    """Returns bool array whether point inside triangle
+
+    Parameters
+    ----------
+    triangles : matrix
+        (m, 3, 3)(triangle, vertex, coordinate)
+    normals : matrix
+        (m, 3)(triangle, vector)
+    points : matrix
+        (m, n, 3)(line, triangle, coordinate)
+
+    Returns
+    -------
+    matrix
+        (m, n, 1)(line, triangle, boolean)
+    """
+    offset1 = np.roll(triangles, -1, axis=-2) # [b, c, a]
+    offset2 = np.roll(triangles, -2, axis=-2) # [c, b, a]
     
     line_vectors = offset1 - offset2 # for each Point of the triangle the opposite side 
     line_normals = np.cross(line_vectors, normals[:, na]) # normal of the opposite side
@@ -64,9 +80,14 @@ def inside_out_test(triangles, normals, points):
     points_br = np.broadcast_to(points_exp, (points_exp.shape[0:2] + (line_normals_exp.shape[2],) + points_exp.shape[3:5]))
 
     merged = np.concatenate([tri_points_br, points_br], axis=-2) # (n, m, 3, 2, 3) (tri, lin, vert, [P_tri, P_lin], xyz)
-    print(line_normals.shape)
-    print(merged.shape)
-    # merged_dot = np.einsum("", merged, line_normals)
+
+    side_points = merged - offset1[na, :, :, na, :]
+
+    side_dotprods = np.einsum("iklmn, kln -> iklm", side_points, line_normals)
+    side_dotprods_prod = np.prod(side_dotprods, axis=-1)[..., na]
+    side_inter_bool = side_dotprods_prod > 0
+    side_inter_bool_merged = np.all(side_inter_bool, axis=-2)
+    return side_inter_bool_merged
 
 if __name__ == "__main__":
     #Strahlen
@@ -82,7 +103,7 @@ if __name__ == "__main__":
 
     #Dreiecke
     triangles = np.array([
-        [[0, 0, 0], [1, 0, 0], [0, 1, 0]],  # Triangle 1 (XY Plane)
+        [[-10, -10, 0], [100, 0, 0], [0, 100, 0]],  # Triangle 1 (XY Plane)
         [[0, 0, 0], [1, 0, 0], [0, 0, 1]],  # Triangle 2 (XZ Plane)
         [[0, 0, 0], [0, 1, 0], [0, 0, 1]],  # Triangle 3 (YZ Plane)
         [[0, 0, 0], [1, 1, 0], [0, 1, 1]],  # Triangle 4 (Diagonal Plane)
@@ -93,4 +114,5 @@ if __name__ == "__main__":
     # Schnittpunkte 
     inter_scalars = intersection_plane_line(triangles_plane_points, triangles_plane_normals, line_vectors, line_points)
     inter_points = line_points[:, na, :] + (line_vectors[:, na, :] * inter_scalars)
-    inside_out_test(triangles, triangles_plane_normals, inter_points)
+
+    inter_hits = inside_out_test(triangles, triangles_plane_normals, inter_points)
