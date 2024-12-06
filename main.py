@@ -5,9 +5,11 @@ Returns
 matrix
     _description_ #todo
 """
+import warnings
 import numpy as np
 from numpy import newaxis as na
 
+warnings.filterwarnings('ignore', r'All-NaN (slice|axis) encountered')
 
 def normal_from_triangle(triangles):
     """Returns Normals for triangles
@@ -118,7 +120,7 @@ def main():
     #Dreiecke
     triangles = np.array([
         [[-10, -10, 0], [100, 0, 0], [0, 100, 0]],  # Triangle 1 (XY Plane)
-        [[-10, -10, 0], [100, 0, 0], [0, 100, 0]],  # Triangle 1 (XY Plane)
+        [[-10, -10, 0], [0, 0, 0], [0, 100, 100]],  # Triangle 1 (XY Plane)
         [[0, 0, 0], [1, 0, 0], [0, 0, 1]],  # Triangle 2 (XZ Plane)
         # [[0, 0, 0], [0, 1, 0], [0, 0, 1]],  # Triangle 3 (YZ Plane)
         # [[0, 0, 0], [1, 1, 0], [0, 1, 1]],  # Triangle 4 (Diagonal Plane)
@@ -127,11 +129,15 @@ def main():
     triangle_pl_pts = triangles[:, 0]
     triangle_pl_nml = normal_from_triangle(triangles)
     # Schnittpunkte
-    inter_scalars = intersection_pln_line(triangle_pl_pts, triangle_pl_nml, line_vec, line_pts)
-    inter_points = line_pts[:, na, :] + (line_vec[:, na, :] * inter_scalars)
+    inter_sc = intersection_pln_line(triangle_pl_pts, triangle_pl_nml, line_vec, line_pts)
+    inter_points = line_pts[:, na, :] + (line_vec[:, na, :] * inter_sc)
 
-    inter_hits = inside_out_test(triangles, triangle_pl_nml, inter_points)
+    inter_hits_mask = inside_out_test(triangles, triangle_pl_nml, inter_points)
 
+    # inter_pts_mskd = np.where(inter_hits_mask, inter_points, np.nan)
+    inter_sc_mskd = np.where(inter_hits_mask, inter_sc, np.nan)
+
+    inter_sc_min = np.nanmin(inter_sc_mskd, axis=-2, keepdims=True)
 
 if __name__ == "__main__":
     main()
