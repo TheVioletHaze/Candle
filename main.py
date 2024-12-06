@@ -87,7 +87,13 @@ if __name__ == "__main__":
 
     triangles_plane_points = triangles[:, 0]
     triangles_plane_normals = normal_from_triangle(triangles)
+    print(triangles_plane_normals)
+
     # Schnittpunkte 
     inter_scalars = intersection_plane_line(triangles_plane_points, triangles_plane_normals, line_vectors, line_points)
     inter_points = line_points[:, na, :] + (line_vectors[:, na, :] * inter_scalars)
     inside_out_test(triangles, triangles_plane_normals, inter_points)
+    intersections = intersection_plane_line(triagles_plane_points, triangles_plane_normals, vectors)
+    inter_points = vectors[:, np.newaxis, :] * intersections + points[:, np.newaxis, :]
+
+    # inside out
