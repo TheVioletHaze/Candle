@@ -85,7 +85,7 @@ def inside_out_test(triangles, normals, points):
 
     tri_points_br = np.broadcast_to(tri_pts_exp, (
         (points_exp.shape[0],) + tri_pts_exp.shape[1:5])) #bc to num of inter
-    
+
     points_br = np.broadcast_to(points_exp,
         (points_exp.shape[0:2] + (line_nml_exp.shape[2],) + points_exp.shape[3:5]))
 
@@ -118,9 +118,10 @@ def main():
     #Dreiecke
     triangles = np.array([
         [[-10, -10, 0], [100, 0, 0], [0, 100, 0]],  # Triangle 1 (XY Plane)
+        [[-10, -10, 0], [100, 0, 0], [0, 100, 0]],  # Triangle 1 (XY Plane)
         [[0, 0, 0], [1, 0, 0], [0, 0, 1]],  # Triangle 2 (XZ Plane)
-        [[0, 0, 0], [0, 1, 0], [0, 0, 1]],  # Triangle 3 (YZ Plane)
-        [[0, 0, 0], [1, 1, 0], [0, 1, 1]],  # Triangle 4 (Diagonal Plane)
+        # [[0, 0, 0], [0, 1, 0], [0, 0, 1]],  # Triangle 3 (YZ Plane)
+        # [[0, 0, 0], [1, 1, 0], [0, 1, 1]],  # Triangle 4 (Diagonal Plane)
     ])
 
     triangles_plane_points = triangles[:, 0]
