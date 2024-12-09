@@ -113,49 +113,33 @@ def main():
 
     line_vec = np.array([
         [[7, 8, 9],
-        [10, 11, 12],],
+        [10, 11, 12]],
         [[7, 8, 9],
-        [10, 11, 12],]
+        [10, 11, 12]],
     ])
 
     #Dreiecke
     triangles = np.array([
         [[-10, -10, 0], [100, 0, 0], [0, 100, 0]],  # Triangle 1 (XY Plane)
-        [[-10, -10, 0], [0, 0, 0], [0, 100, 100]],  # Triangle 2
+        [[-10, -10, 0], [0, 0, 0], [0, 100, 100]],  # Triangle 1 (XY Plane)
         [[0, 0, 0], [1, 0, 0], [0, 0, 1]],  # Triangle 2 (XZ Plane)
         # [[0, 0, 0], [0, 1, 0], [0, 0, 1]],  # Triangle 3 (YZ Plane)
         # [[0, 0, 0], [1, 1, 0], [0, 1, 1]],  # Triangle 4 (Diagonal Plane)
     ])
 
-<<<<<<< HEAD
-    triangles_plane_points = triangles[:, 0]
-    triangles_plane_normals = normal_from_triangle(triangles)
-    print(triangles_plane_normals)
-
-    # Schnittpunkte 
-    inter_scalars = intersection_plane_line(triangles_plane_points, triangles_plane_normals, line_vectors, line_points)
-    inter_points = line_points[:, na, :] + (line_vectors[:, na, :] * inter_scalars)
-<<<<<<< HEAD
-    inside_out_test(triangles, triangles_plane_normals, inter_points)
-    intersections = intersection_plane_line(triagles_plane_points, triangles_plane_normals, vectors)
-    inter_points = vectors[:, np.newaxis, :] * intersections + points[:, np.newaxis, :]
-
-    # inside out
-=======
-=======
     triangle_pl_pts = triangles[:, 0]
     triangle_pl_nml = normal_from_triangle(triangles)
     # Schnittpunkte
     inter_sc = intersection_pln_line(triangle_pl_pts, triangle_pl_nml, line_vec, line_pts)
-    inter_points = line_pts[..., na, :] + (line_vec[..., na, :] * inter_sc)
+    inter_points = line_pts[:, na, :] + (line_vec[:, na, :] * inter_sc)
 
     inter_hits_mask = inside_out_test(triangles, triangle_pl_nml, inter_points)
 
     # inter_pts_mskd = np.where(inter_hits_mask, inter_points, np.nan)
     inter_sc_mskd = np.where(inter_hits_mask, inter_sc, np.nan)
-    print(inter_sc_mskd)
-    inter_sc_min = np.nanmin(inter_sc_mskd, axis=-2, keepdims=True)
->>>>>>> e643be0 (functional)
 
-    inter_hits = inside_out_test(triangles, triangles_plane_normals, inter_points)
->>>>>>> db1804d (inside_out_test funtioning)
+    inter_sc_min = np.nanmin(inter_sc_mskd, axis=-2, keepdims=True)
+
+if __name__ == "__main__":
+    main()
+    
