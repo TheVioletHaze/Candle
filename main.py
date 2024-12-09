@@ -28,6 +28,23 @@ def vector_from_points(point_1, point_2):
     """
     return point_1-point_2
 
+def vector_from_points(point_1, point_2):
+    """Returns A Vector from point a to b
+
+    Parameters
+    ----------
+    point_1 : ndarray
+        ([m], 3)([points], coordinate)
+    point_2 : ndarray
+        ([m], 3)([points], coordinate)
+
+    Returns
+    -------
+    ndarray
+        ([m], 3)([line], coordinate)
+    """
+    return point_1-point_2
+
 def normal_from_triangle(triangles):
     """Returns Normals for triangles
 
@@ -35,10 +52,12 @@ def normal_from_triangle(triangles):
     ----------
     triangles : matrix
         ([m], 3, 3)([triangle], vertex, coordinate)
+        ([m], 3, 3)([triangle], vertex, coordinate)
 
     Returns
     -------
     matrix
+        ([m], 3)([triangle], vector)
         ([m], 3)([triangle], vector)
     """
     a_b = triangles[..., 0, :] - triangles[..., 1, :]
@@ -57,12 +76,15 @@ def intersection_pln_line(triangle_pl_pts, triangle_pl_nml, line_vec, line_pts):
         (m, 3)(triangle, vector)
     line_vec : matrix
         ([m], 3)([line], vector)
+        ([m], 3)([line], vector)
     line_pts : matrix
+        ([m], 3)([line], point) 
         ([m], 3)([line], point) 
 
     Returns
     -------
     matrix
+        ([m], n, 1)([line], triangle, scalar)
         ([m], n, 1)([line], triangle, scalar)
     """
 
@@ -85,23 +107,29 @@ def inside_out_test(triangles, normals, points):
         (m, 3)(triangle, vector)
     points : matrix
         ([m], n, 3)([line], triangle, coordinate)
+        ([m], n, 3)([line], triangle, coordinate)
 
     Returns
     -------
     matrix
+        ([m], n, 1)([line], triangle, boolean)
         ([m], n, 1)([line], triangle, boolean)
     """
     offset1 = np.roll(triangles, -1, axis=-2) # [b, c, a]
     offset2 = np.roll(triangles, -2, axis=-2) # [c, b, a]
 
     line_vec = offset1 - offset2 # opposite side
+    line_vec = offset1 - offset2 # opposite side
     line_normals = np.cross(line_vec, normals[..., na, :]) # normal of the opposite side
 
 
     tri_pts_exp = triangles[na, :, :, na, :] # exp for num of lines and concatenate
     points_exp = points[..., na, na, :] # exp for num of triangles and concatenate
+    tri_pts_exp = triangles[na, :, :, na, :] # exp for num of lines and concatenate
+    points_exp = points[..., na, na, :] # exp for num of triangles and concatenate
 
     shape = points_exp.shape[:-4] + tri_pts_exp.shape[-4:]
+    triangle_pts_br = np.broadcast_to(tri_pts_exp, shape)
     triangle_pts_br = np.broadcast_to(tri_pts_exp, shape)
     points_br = np.broadcast_to(points_exp, shape)
 
