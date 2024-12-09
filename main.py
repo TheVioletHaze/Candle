@@ -1,3 +1,10 @@
+"""Finds at what points rays hit which triangle
+
+Returns
+-------
+matrix
+    _description_ #todo
+"""
 import numpy as np
 from numpy import newaxis as na
 
@@ -72,14 +79,19 @@ def inside_out_test(triangles, normals, points):
     line_normals = np.cross(line_vec, normals[:, na]) # normal of the opposite side
 
 
-    line_normals_exp = line_normals[na, :, :, na, :]
-    tri_points_exp = triangles[na, :, :, na, :]
+    line_nml_exp = line_normals[na, :, :, na, :]
+    tri_pts_exp = triangles[na, :, :, na, :]
     points_exp = points[:, :, na, na, :]
 
-    tri_points_br = np.broadcast_to(tri_points_exp, ((points_exp.shape[0],) + tri_points_exp.shape[1:5])) #broadcast to number of intersections
-    points_br = np.broadcast_to(points_exp, (points_exp.shape[0:2] + (line_normals_exp.shape[2],) + points_exp.shape[3:5]))
+    tri_points_br = np.broadcast_to(tri_pts_exp, (
+        (points_exp.shape[0],) + tri_pts_exp.shape[1:5])) #bc to num of inter
+    
+    points_br = np.broadcast_to(points_exp,
+        (points_exp.shape[0:2] + (line_nml_exp.shape[2],) + points_exp.shape[3:5]))
 
-    merged = np.concatenate([tri_points_br, points_br], axis=-2) # (n, m, 3, 2, 3) (tri, lin, vert, [P_tri, P_lin], xyz)
+
+    merged = np.concatenate([tri_points_br, points_br], axis=-2)
+        # (n, m, 3, 2, 3) (tri, lin, vert, [P_tri, P_lin], xyz)
 
     side_points = merged - offset1[na, :, :, na, :]
 
