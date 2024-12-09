@@ -131,13 +131,13 @@ def main():
     triangle_pl_nml = normal_from_triangle(triangles)
     # Schnittpunkte
     inter_sc = intersection_pln_line(triangle_pl_pts, triangle_pl_nml, line_vec, line_pts)
-    inter_points = line_pts[:, na, :] + (line_vec[:, na, :] * inter_sc)
+    inter_points = line_pts[..., na, :] + (line_vec[..., na, :] * inter_sc)
 
     inter_hits_mask = inside_out_test(triangles, triangle_pl_nml, inter_points)
 
     # inter_pts_mskd = np.where(inter_hits_mask, inter_points, np.nan)
     inter_sc_mskd = np.where(inter_hits_mask, inter_sc, np.nan)
-
+    print(inter_sc_mskd)
     inter_sc_min = np.nanmin(inter_sc_mskd, axis=-2, keepdims=True)
 
 if __name__ == "__main__":
