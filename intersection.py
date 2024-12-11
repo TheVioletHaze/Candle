@@ -148,6 +148,10 @@ def intersection_ray_triangle(line_vec, line_pts, triangles):
     ndarray
         ([m], n, 1)([line], triangle, scalar)
     """
+    vec_shape = line_vec.shape
+    pts_shape = line_pts.shape
+    if vec_shape != pts_shape:
+        raise ValueError(f"shape of line_vec {vec_shape} and line_pts {pts_shape} doesn't match.")
 
     triangle_pl_pts = triangles[:, 0]
     triangle_pl_nml = normal_from_triangle(triangles)
@@ -163,30 +167,3 @@ def intersection_ray_triangle(line_vec, line_pts, triangles):
     inter_min_mask = inter_sc == inter_sc_min
     inter_sc_min_mskd = np.where(inter_min_mask, inter_sc, np.nan) # also nan if not first hit
     return inter_sc_min_mskd
-
-def main(): #todo remove
-    """testing method
-    """
-    #Strahlen
-    line_pts = np.array([
-        [1, 2, 3],
-        [4, 5, 6],
-        ])
-
-    line_vec = np.array([
-        [7, 8, 9],
-        [10, 11, 12],
-    ])
-
-    #Dreiecke
-    triangles = np.array([
-        [[-10, -10, 0], [100, 0, 0], [0, 100, 0]],  # Triangle 1 (XY Plane)
-        [[-10, -10, 0], [0, 0, 0], [0, 100, 100]],  # Triangle 1 (XY Plane)
-        [[0, 0, 0], [1, 0, 0], [0, 0, 1]],  # Triangle 2 (XZ Plane)
-        # [[0, 0, 0], [0, 1, 0], [0, 0, 1]],  # Triangle 3 (YZ Plane)
-        # [[0, 0, 0], [1, 1, 0], [0, 1, 1]],  # Triangle 4 (Diagonal Plane)
-    ])
-    print(intersection_ray_triangle(line_vec, line_pts, triangles))
-
-if __name__ == "__main__":
-    main()
