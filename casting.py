@@ -24,17 +24,13 @@ def main():
     triangles = np.array([
         [[15, -5, -5], [20, -5, 5], [20, 5, -5]],
     ])
+
     intersections =inter.intersection_ray_triangle(vectors, points, triangles)
-
-    image=Image.new('RGB', (n,n))
-    change_pixels = image.load()
-
-    for i in range(0, n):
-        for j in range(0, n):
-            if not np.isnan(intersections[i, j, 0, 0]):
-                change_pixels[i, j] = (0, 0, 255)
-            else:
-                change_pixels[i, j] = (0, 0, 0)
+    
+    not_nan_mask = ~np.isnan(intersections[..., 0, 0])
+    rgb_image = np.zeros((n, n, 3), dtype=np.uint8)
+    rgb_image[not_nan_mask] = [0, 0, 255]
+    image = Image.fromarray(rgb_image)
     image.show()
 
 if __name__ == "__main__":
