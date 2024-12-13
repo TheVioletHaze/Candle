@@ -8,9 +8,9 @@ matrix
 import warnings
 import numpy as np
 from numpy import newaxis as na
-
 warnings.filterwarnings('ignore', r'All-NaN (slice|axis) encountered')
 
+RUNS = 100
 
 
 def vector_from_points(point_1, point_2):
@@ -100,6 +100,7 @@ def inside_out_test(triangles, normals, points):
         ([m], n, 1)([line], triangle, boolean)
         ([m], n, 1)([line], triangle, boolean)
     """
+
     offset1 = np.roll(triangles, -1, axis=-2) # [b, c, a]
     offset2 = np.roll(triangles, -2, axis=-2) # [c, b, a]
 
@@ -107,28 +108,18 @@ def inside_out_test(triangles, normals, points):
     line_vec = offset1 - offset2 # opposite side
     line_normals = np.cross(line_vec, normals[..., na, :]) # normal of the opposite side
 
+    points_vert = points[..., na, :] - offset1
+    vert_opp = triangles - offset1
 
-    tri_pts_exp = triangles[na, :, :, na, :] # exp for num of lines and concatenate
-    points_exp = points[..., na, na, :] # exp for num of triangles and concatenate
-    tri_pts_exp = triangles[na, :, :, na, :] # exp for num of lines and concatenate
-    points_exp = points[..., na, na, :] # exp for num of triangles and concatenate
+    point_dotprods = np.einsum("...n, ...n -> ...", points_vert, line_normals)[..., na]
+    vert_dotprods = np.einsum("...n, ...n -> ...", vert_opp, line_normals)[..., na]
 
-    shape = points_exp.shape[:-4] + tri_pts_exp.shape[-4:]
-    triangle_pts_br = np.broadcast_to(tri_pts_exp, shape)
-    triangle_pts_br = np.broadcast_to(tri_pts_exp, shape)
-    points_br = np.broadcast_to(points_exp, shape)
-
-
-    merged = np.concatenate([triangle_pts_br, points_br], axis=-2)
-        # ([n], m, 3, 2, 3) ([lin], tri, vert, [P_tri, P_lin], xyz)
-
-    side_points = merged - offset1[na, :, :, na, :]
-
-    side_dotprods = np.einsum("...vmn, ...vn -> ...vm", side_points, line_normals)
-    side_dotprods_prod = np.prod(side_dotprods, axis=-1)[..., na]
-    side_inter_bool = side_dotprods_prod > 0
+    points_vert_multi = point_dotprods * vert_dotprods
+    side_inter_bool = points_vert_multi > 0
     side_inter_bool_merged = np.all(side_inter_bool, axis=-2)
     return side_inter_bool_merged
+
+
 
 def intersection_ray_triangle(line_vec, line_pts, triangles):
     """Returns the scalar of the first intersection point of rays for given triangles. 
