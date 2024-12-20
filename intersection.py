@@ -9,9 +9,25 @@ import warnings
 import numpy as np
 from numpy import newaxis as na
 warnings.filterwarnings('ignore', r'All-NaN (slice|axis) encountered')
+warnings.filterwarnings('ignore', r'invalid value encountered in divide')
 
 RUNS = 100
 
+def normalize_vector(vectors):
+    """Return unit vector
+
+    Parameters
+    ----------
+    vectors : ndarray
+        ([m], 3)([vector], coordinate)
+
+    Returns
+    -------
+    ndarray
+        ([m], 3)([vector], coordinate)
+    """
+    magnitude = np.linalg.norm(vectors, axis=-1, keepdims=True)
+    return vectors/magnitude
 
 def vector_from_points(point_1, point_2):
     """Returns A Vector from point a to b

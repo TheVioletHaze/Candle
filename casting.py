@@ -18,7 +18,7 @@ def main():
         points.append(points_temp)
 
     points=np.array(points)
-    vectors = inter.vector_from_points(points, [0, 0, 0])
+    vectors = inter.normalize_vector(inter.vector_from_points(points, [0, 0, 0]))
 
     #Dreiecke
     triangles = np.array([
@@ -26,7 +26,7 @@ def main():
     ])
 
     intersections =inter.intersection_ray_triangle(vectors, points, triangles)
-    
+
     not_nan_mask = ~np.isnan(intersections[..., 0, 0])
     rgb_image = np.zeros((n, n, 3), dtype=np.uint8)
     rgb_image[not_nan_mask] = [0, 0, 255]
