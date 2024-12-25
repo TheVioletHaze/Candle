@@ -3,6 +3,7 @@ from numpy import newaxis as na
 from PIL import Image
 import intersection as inter
 
+
 def vector_from_points(point_1, point_2):
     """Returns a Vector from point a to b
 
@@ -19,25 +20,121 @@ def vector_from_points(point_1, point_2):
         ([m], 3)([line], coordinate)
     """
     return point_1-point_2
+
+
+def calculate_color(vectors, points, triangles, colors):
+    """gives the color each pixel should have
+
+    Parameters
+    ----------
+    vectors : ndarray
+        ([m], 3)([lines], coordinates)
+    points : ndarray
+        ([m], 3)([lines], coordinates), shape must match vectors
+    triangles : ndarray
+        (n, 3, 3)(triangles, vertecies, coordinates)
+    colors : ndarray
+        (n, 1)(triangles, color) number of triangles must match
+
+    Returns
+    -------
+    ndarray
+        color that arrives at every point
+    """
+    intersections = inter.intersection_ray_triangle(vectors, points, triangles)
+
+    color = np.broadcast_to(colors, (intersections.shape[:-1] + (3,)))[..., na, :]
+    angle = inter.incidence_angle(triangles, vectors)
+
+    color_shaded = color * angle[..., na]  # diffuse
+    color_shaded = np.abs(color_shaded)# ambient
+    not_nan_mask = ~np.isnan(intersections)[..., na]
+    color_mskd = np.where(not_nan_mask, color_shaded, np.nan)
+    color_sum = np.nansum(color_mskd, axis=-3)
+    color_abs = np.abs(color_sum)
+    color_squeeze= np.squeeze(color_abs)
+
+
+    rgb_image = color_squeeze.astype(np.uint8)
+    return rgb_image
+
+def pixel_grid(point_a, point_b, res_b, point_c, res_c):
+    """returns point grid between three points to simulate screen
+
+    Parameters
+    ----------
+    point_a : ndarray
+        (3)(coordinate) top left corner
+    point_b : ndarray
+        (3)(coordinate) bottom left corner
+    res_b : int
+        resolution from top to bottom
+    point_c : ndarray
+        (3)(coordinate) top right corner
+    res_c : int
+        resolution from left to right
+
+
+    Returns
+    -------
+    ndarray
+        (height, length)
+    """
+    vec_b = point_b - point_a
+    vec_c = point_c - point_a
+
+    shift_b = vec_b / (res_b-1)
+    shift_c = vec_c / (res_c-1)
+
+    points = []
+    for i in range(0, res_b):
+        row = []
+        row_first = point_a + (shift_b * i)
+        for j in range(0, res_c):
+            row.append(row_first + (shift_c * j))
+        
+        points.append(row)
+
+    return np.array(points)
+
+
+def render_image(pov, points, triangles, triangles_color):
+    """renders a pillow image for 3d scene
+
+    Parameters
+    ----------
+    pov : ndarray
+        (3)(coodrinate) point of view for camera
+    points : ndarray
+        (m, n, 3)(height, length, coordinate) grid for pixels of screen
+    triangles : ndarray
+        (m, 3, 3)(triangles, coordinate)
+    triangles_color : ndarray
+        (m, 1)(triangles, vertecies, coordinates) number of triangles must match
+
+    Returns
+    -------
+    pillow image
+        pillow image render of scene
+    """
+
+    vectors = inter.normalize_vector(vector_from_points(points, pov))
+
+    rgb_image = calculate_color(vectors, points, triangles, triangles_color)
+    image = Image.fromarray(rgb_image)
+    return image
+
 def main():
     """testing method
     """
     #Strahlen
-    n=1000
-    m=10
-    length = m / n
-    start_p=[6, -5, -5]
-    points = []
-    for i in range(0, n):
-        points_temp = []
-        for j in range(0,n):
-            points_temp.append([start_p[0], start_p[1]+(i*length), start_p[2]+(j*length)])
-        points.append(points_temp)
+    a = np.array([5, -5, -5])
+    b = np.array([5, 4, -5])
+    c = np.array([5, -5, 4])
+    m = 500
+    points = pixel_grid(a, b, m, c, m)
 
-    points=np.array(points)
-    vectors = inter.normalize_vector(inter.vector_from_points(points, [0, 0, 0]))
-
-    origin_br = np.broadcast_to([0,0,0], vectors.shape)
+    origin = np.array([0, 0, 0])
 
     #Dreiecke
     triangles = np.array([
@@ -50,33 +147,9 @@ def main():
         [0, 255, 0]
     ])
 
-    intersections = inter.intersection_ray_triangle(vectors, points, triangles)
-
-    color = np.broadcast_to(triangles_color, (intersections.shape[:-1] + (3,)))[..., na, :]
-    angle = inter.incidence_angle(triangles, vectors)
-
-    color_shaded = ((color * angle[..., na]) / intersections[..., na])  # diffuse
-    color_shaded = np.abs(color_shaded) +20 # ambient
-    not_nan_mask = ~np.isnan(intersections)[..., na]
-    color_mskd = np.where(not_nan_mask, color_shaded, np.nan)
-    color_sum = np.nansum(color_mskd, axis=-3)
-    color_abs = np.abs(color_sum)
-    color_squeeze= np.squeeze(color_abs)
-    print(color_squeeze)
-    print(angle)
-
-    rgb_image = color_squeeze.astype(np.uint8)
-
-    image = Image.fromarray(rgb_image)
+    image = render_image(origin, points, triangles, triangles_color)
     image.show()
-
-    # not_nan_mask = ~np.isnan(intersections[..., 0, 0])
-    # rgb_image = np.zeros((n, n, 3), dtype=np.uint8)
-    # rgb_image[not_nan_mask] = [255, 255, 255]
-
-    # print(rgb_image.shape)
-    # image = Image.fromarray(rgb_image)
-    # image.show()
 
 if __name__ == "__main__":
     main()
+
