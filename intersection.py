@@ -24,23 +24,6 @@ def normalize_vector(vectors):
     magnitude = np.linalg.norm(vectors, axis=-1, keepdims=True)
     return vectors/magnitude
 
-def vector_from_points(point_1, point_2):
-    """Returns A Vector from point a to b
-
-    Parameters
-    ----------
-    point_1 : ndarray
-        ([m], 3)([points], coordinate)
-    point_2 : ndarray
-        ([m], 3)([points], coordinate)
-
-    Returns
-    -------
-    ndarray
-        ([m], 3)([line], coordinate)
-    """
-    return point_1-point_2
-
 def normal_from_triangle(triangles):
     """Returns Normals for triangles
 

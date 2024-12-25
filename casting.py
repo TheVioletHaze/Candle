@@ -3,6 +3,22 @@ from numpy import newaxis as na
 from PIL import Image
 import intersection as inter
 
+def vector_from_points(point_1, point_2):
+    """Returns a Vector from point a to b
+
+    Parameters
+    ----------
+    point_1 : ndarray
+        ([m], 3)([points], coordinate)
+    point_2 : ndarray
+        ([m], 3)([points], coordinate)
+
+    Returns
+    -------
+    ndarray
+        ([m], 3)([line], coordinate)
+    """
+    return point_1-point_2
 def main():
     """testing method
     """
