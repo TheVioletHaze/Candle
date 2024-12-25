@@ -1,4 +1,5 @@
 import numpy as np
+from numpy import newaxis as na
 from PIL import Image
 import intersection as inter
 
@@ -9,7 +10,7 @@ def main():
     n=1000
     m=10
     length = m / n
-    start_p=[10, -5, -5]
+    start_p=[6, -5, -5]
     points = []
     for i in range(0, n):
         points_temp = []
@@ -20,18 +21,46 @@ def main():
     points=np.array(points)
     vectors = inter.normalize_vector(inter.vector_from_points(points, [0, 0, 0]))
 
+    origin_br = np.broadcast_to([0,0,0], vectors.shape)
+
     #Dreiecke
     triangles = np.array([
-        [[15, -5, -5], [20, -5, 5], [20, 5, -5]],
+        [[15, -10, -10], [50, -14, 30], [50, 30, -14]],
+        [[7,-3,-3], [7,-3.2,-3.5], [7,-3.5,-3.2]],
     ])
 
-    intersections =inter.intersection_ray_triangle(vectors, points, triangles)
+    triangles_color = np.array([
+        [255, 255, 255],
+        [0, 255, 0]
+    ])
 
-    not_nan_mask = ~np.isnan(intersections[..., 0, 0])
-    rgb_image = np.zeros((n, n, 3), dtype=np.uint8)
-    rgb_image[not_nan_mask] = [0, 0, 255]
+    intersections = inter.intersection_ray_triangle(vectors, points, triangles)
+
+    color = np.broadcast_to(triangles_color, (intersections.shape[:-1] + (3,)))[..., na, :]
+    angle = inter.incidence_angle(triangles, vectors)
+
+    color_shaded = ((color * angle[..., na]) / intersections[..., na])  # diffuse
+    color_shaded = np.abs(color_shaded) +20 # ambient
+    not_nan_mask = ~np.isnan(intersections)[..., na]
+    color_mskd = np.where(not_nan_mask, color_shaded, np.nan)
+    color_sum = np.nansum(color_mskd, axis=-3)
+    color_abs = np.abs(color_sum)
+    color_squeeze= np.squeeze(color_abs)
+    print(color_squeeze)
+    print(angle)
+
+    rgb_image = color_squeeze.astype(np.uint8)
+
     image = Image.fromarray(rgb_image)
     image.show()
+
+    # not_nan_mask = ~np.isnan(intersections[..., 0, 0])
+    # rgb_image = np.zeros((n, n, 3), dtype=np.uint8)
+    # rgb_image[not_nan_mask] = [255, 255, 255]
+
+    # print(rgb_image.shape)
+    # image = Image.fromarray(rgb_image)
+    # image.show()
 
 if __name__ == "__main__":
     main()

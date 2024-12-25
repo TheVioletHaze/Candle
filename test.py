@@ -7,12 +7,21 @@ def main():
     """
     #Strahlen
     points=np.array([
-        [[0, 0, 0], [5, 0, 0], [5, 3, 4]],
-        [[2, 7, 8], [7, 6, 11], [3, 6, 1]]
+        [[15, -1, -1], [15, -1, -1], [15, -1, -1]],
+        [[15, -1, -1], [15, -1, -1], [15, -1, -1]]
     ])
-    vectors = inter.vector_from_points(points, [0, 0, 0])
+    vectors = inter.normalize_vector(inter.vector_from_points(points, [0, 0, 0]))
 
-    print(inter.normalize_vector(vectors))
+    #Dreiecke
+    triangles = np.array([
+        [[15, -5, -5], [20, -5, 5], [20, 5, -5]],
+        [[15, -5, -5], [20, -5, 5], [20, 5, -5]],
+    ])
 
+    origin_br = np.broadcast_to([0,0,0], vectors.shape)
+    intersections = inter.intersection_ray_triangle(vectors, origin_br, triangles)
+    angle = inter.incidence_angle(triangles, vectors)
+    print(angle.shape)
+    print(angle)
 if __name__ == "__main__":
     main()
