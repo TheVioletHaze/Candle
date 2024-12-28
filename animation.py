@@ -9,7 +9,7 @@ import casting as cast
 def main(framepath):
     """testing method
     """
-    frame_num = 2
+    frame_num = 30
     decimals = len(str(frame_num)) +1
 
     if framepath.exists() and framepath.is_dir():
@@ -25,6 +25,13 @@ def main(framepath):
     points = cast.pixel_grid(a, b, m, c, m)
 
     origin = np.array([0, 0, 0])
+
+    #Szene
+    scene = {
+        "ambient": 1,
+        "diffuse": 1,
+        "specular": 1,
+    }
 
     #Dreiecke
     a = 3
@@ -54,7 +61,7 @@ def main(framepath):
 
 
 
-        image = cast.render_image(origin, points, triangles)
+        image = cast.render_image(origin, points, triangles, scene)
         image.save(f"./frames/{i:0{decimals}d}.bmp")
 
     os.system(

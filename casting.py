@@ -22,7 +22,7 @@ def vector_from_points(point_1, point_2):
     return point_1-point_2
 
 
-def calculate_color(vectors, points, triangles):
+def calculate_color(vectors, points, triangles, scene):
     """gives the color each pixel should have
 
     Parameters
@@ -43,20 +43,42 @@ def calculate_color(vectors, points, triangles):
     """
     triangles_coord = np.array([tri["xyz"] for tri in triangles])
     triangles_color = np.array([tri["color"] for tri in triangles])
+    triangles_diffuse = np.array([tri["diffuse"] for tri in triangles])
+    triangles_specular = np.array([tri["specular"] for tri in triangles])
+
+
     intersections = inter.intersection_ray_triangle(vectors, points, triangles_coord)
 
     color = np.broadcast_to(triangles_color, (intersections.shape[:-1] + (3,)))[..., na, :]
+
+
+    triangles_ambient = np.array([tri["ambient"] for tri in triangles])[..., na]
+    tri_ambient_br = np.broadcast_to(triangles_ambient, intersections.shape)
+
+    triangles_diffuse = np.array([tri["diffuse"] for tri in triangles])[..., na]
+    tri_diffuse_br = np.broadcast_to(triangles_diffuse, intersections.shape)
+
+    triangles_specular = np.array([tri["specular"] for tri in triangles])[..., na]
+    tri_specular_br = np.broadcast_to(triangles_specular, intersections.shape)
+
+    
     angle = inter.incidence_angle(triangles_coord, vectors)
 
-    color_shaded = color * angle[..., na]  # diffuse
-    color_shaded = np.abs(color_shaded)# ambient
+    # shading
+    shade_ambient = tri_ambient_br * scene["ambient"]
+    shade_diffuse = tri_diffuse_br * scene["diffuse"] * angle
+
+    shade_combine = shade_ambient + shade_diffuse
+
+    color_shaded = color * shade_combine[..., na]
+
     not_nan_mask = ~np.isnan(intersections)[..., na]
     color_mskd = np.where(not_nan_mask, color_shaded, np.nan)
     color_sum = np.nansum(color_mskd, axis=-3)
     color_abs = np.abs(color_sum)
     color_squeeze= np.squeeze(color_abs)
 
-
+    np.where(color_squeeze, color_squeeze > 255, 255)
     rgb_image = color_squeeze.astype(np.uint8)
     return rgb_image
 
@@ -100,7 +122,7 @@ def pixel_grid(point_a, point_b, res_b, point_c, res_c):
     return np.array(points)
 
 
-def render_image(pov, points, triangles):
+def render_image(pov, points, triangles, scene):
     """renders a pillow image for 3d scene
 
     Parameters
@@ -121,7 +143,7 @@ def render_image(pov, points, triangles):
     """
     vectors = inter.normalize_vector(vector_from_points(points, pov))
 
-    rgb_image = calculate_color(vectors, points, triangles)
+    rgb_image = calculate_color(vectors, points, triangles, scene)
     image = Image.fromarray(rgb_image)
     return image
 
@@ -136,6 +158,13 @@ def main():
     points = pixel_grid(a, b, m, c, m)
 
     origin = np.array([0, 0, 0])
+
+    #Szene
+    scene = {
+        "ambient": 1,
+        "diffuse": 1,
+        "specular": 1
+    }
 
     #Dreiecke
     triangles = [
@@ -161,7 +190,7 @@ def main():
             },
         ]
 
-    image = render_image(origin, points, triangles)
+    image = render_image(origin, points, triangles, scene)
     image.show()
 
 if __name__ == "__main__":
