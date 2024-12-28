@@ -22,7 +22,7 @@ def vector_from_points(point_1, point_2):
     return point_1-point_2
 
 
-def calculate_color(vectors, points, triangles, colors):
+def calculate_color(vectors, points, triangles):
     """gives the color each pixel should have
 
     Parameters
@@ -41,10 +41,12 @@ def calculate_color(vectors, points, triangles, colors):
     ndarray
         color that arrives at every point
     """
-    intersections = inter.intersection_ray_triangle(vectors, points, triangles)
+    triangles_coord = np.array([tri["xyz"] for tri in triangles])
+    triangles_color = np.array([tri["color"] for tri in triangles])
+    intersections = inter.intersection_ray_triangle(vectors, points, triangles_coord)
 
-    color = np.broadcast_to(colors, (intersections.shape[:-1] + (3,)))[..., na, :]
-    angle = inter.incidence_angle(triangles, vectors)
+    color = np.broadcast_to(triangles_color, (intersections.shape[:-1] + (3,)))[..., na, :]
+    angle = inter.incidence_angle(triangles_coord, vectors)
 
     color_shaded = color * angle[..., na]  # diffuse
     color_shaded = np.abs(color_shaded)# ambient
@@ -92,13 +94,13 @@ def pixel_grid(point_a, point_b, res_b, point_c, res_c):
         row_first = point_a + (shift_b * i)
         for j in range(0, res_c):
             row.append(row_first + (shift_c * j))
-        
+
         points.append(row)
 
     return np.array(points)
 
 
-def render_image(pov, points, triangles, triangles_color):
+def render_image(pov, points, triangles):
     """renders a pillow image for 3d scene
 
     Parameters
@@ -117,10 +119,9 @@ def render_image(pov, points, triangles, triangles_color):
     pillow image
         pillow image render of scene
     """
-
     vectors = inter.normalize_vector(vector_from_points(points, pov))
 
-    rgb_image = calculate_color(vectors, points, triangles, triangles_color)
+    rgb_image = calculate_color(vectors, points, triangles)
     image = Image.fromarray(rgb_image)
     return image
 
@@ -128,28 +129,40 @@ def main():
     """testing method
     """
     #Strahlen
-    a = np.array([5, -5, -5])
-    b = np.array([5, 4, -5])
-    c = np.array([5, -5, 4])
+    a = np.array([-5, -5, 5])
+    b = np.array([5, -5, 5])
+    c = np.array([-5, 5, 5])
     m = 500
     points = pixel_grid(a, b, m, c, m)
 
     origin = np.array([0, 0, 0])
 
     #Dreiecke
-    triangles = np.array([
-        [[15, -10, -10], [50, -14, 30], [50, 30, -14]],
-        [[7,-3,-3], [7,-3.2,-3.5], [7,-3.5,-3.2]],
-    ])
+    triangles = [
+            {
+                "xyz": [
+                    [-10, -10, 30],
+                    [-14, 30, 40],
+                    [30, -14, 40]],
+                "color": [255, 255, 255],
+                "ambient": 0.3,
+                "diffuse": 0.4,
+                "specular": 0.3
+            },
+            {
+                "xyz": [
+                    [-3,-3, 7],
+                    [-3.2,-3.5, 7],
+                    [-3.5,-3.2, 7]],
+                "color": [0, 255, 0],
+                "ambient": 0.3,
+                "diffuse": 0.4,
+                "specular": 0.3
+            },
+        ]
 
-    triangles_color = np.array([
-        [255, 255, 255],
-        [0, 255, 0]
-    ])
-
-    image = render_image(origin, points, triangles, triangles_color)
+    image = render_image(origin, points, triangles)
     image.show()
 
 if __name__ == "__main__":
     main()
-

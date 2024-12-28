@@ -53,10 +53,8 @@ def main(framepath):
         ]
 
 
-        triangles_coord = np.array([tri["xyz"] for tri in triangles])
-        triangles_color = np.array([tri["color"] for tri in triangles])
 
-        image = cast.render_image(origin, points, triangles_coord, triangles_color)
+        image = cast.render_image(origin, points, triangles)
         image.save(f"./frames/{i:0{decimals}d}.bmp")
 
     os.system(
