@@ -153,7 +153,7 @@ def intersection_ray_triangle(line_vec, line_pts, triangles):
     inter_sc_min_mskd = np.where(inter_min_mask, inter_sc, np.nan) # also nan if not first hit
     return inter_sc_min_mskd
 
-def incidence_angle(triangle, vectors):
-    triangle_nml = normal_from_triangle(triangle)
-    normalized_tri_nml = normalize_vector(triangle_nml)
-    return np.einsum("...jn, ...mn -> ...jm", vectors, normalized_tri_nml)[..., na]
+def incidence_angle(triangle, ray):
+    triangle_nrm = normalize_vector(triangle)
+    ray_nrm = normalize_vector(ray)
+    return np.einsum("...m, ...m -> ...", triangle_nrm, ray_nrm)[..., na]

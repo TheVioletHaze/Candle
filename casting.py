@@ -48,27 +48,38 @@ def calculate_color(vectors, points, scene):
 
 
     intersections = inter.intersection_ray_triangle(vectors, points, triangles_coord)
+    points_br = np.broadcast_to(points[..., na, :], (intersections.shape[:-1] + (3,)))
+    vectors_br = np.broadcast_to(vectors[..., na, :], (intersections.shape[:-1] + (3,)))
+    inter_p =  points_br + (intersections * vectors_br)
 
     color = np.broadcast_to(triangles_color, (intersections.shape[:-1] + (3,)))[..., na, :]
 
+    lights_coord = np.array([light["xyz"] for light in scene["lights"]])
+    light_coord_br = np.broadcast_to(lights_coord[..., na, :],
+                        (inter_p.shape[:-1] + lights_coord.shape[:-1] + (inter_p.shape[-1],)))
+    inter_p_br = np.broadcast_to(inter_p[..., na, :], light_coord_br.shape)
+    light_ray = inter_p_br - light_coord_br
+    print(light_ray.shape)
+    print(triangles_coord.shape)
+    triangles_nml = inter.normal_from_triangle(triangles_coord)
+    triangles_nml_br = np.broadcast_to(triangles_nml[..., na, :], light_coord_br.shape)
+    print(triangles_nml_br.shape)
+    angle = inter.incidence_angle(triangles_nml_br, light_ray)
 
     triangles_ambient = np.array([tri["ambient"] for tri in scene["triangles"]])[..., na]
     tri_ambient_br = np.broadcast_to(triangles_ambient, intersections.shape)
 
     triangles_diffuse = np.array([tri["diffuse"] for tri in scene["triangles"]])[..., na]
-    tri_diffuse_br = np.broadcast_to(triangles_diffuse, intersections.shape)
+    tri_diffuse_br = np.broadcast_to(triangles_diffuse[..., na, :], angle.shape)
 
     triangles_specular = np.array([tri["specular"] for tri in scene["triangles"]])[..., na]
-    tri_specular_br = np.broadcast_to(triangles_specular, intersections.shape)
-
-
-    angle = inter.incidence_angle(triangles_coord, vectors)
+    tri_specular_br = np.broadcast_to(triangles_specular[..., na, :], angle.shape)
 
     # shading
     shade_ambient = tri_ambient_br * scene["general"]["ambient"]
     shade_diffuse = tri_diffuse_br * scene["general"]["diffuse"] * angle
 
-    shade_combine = shade_ambient + shade_diffuse
+    shade_combine = shade_ambient + np.nansum(shade_diffuse, axis=-2)
 
     color_shaded = color * shade_combine[..., na]
 
