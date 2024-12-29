@@ -27,7 +27,7 @@ def main(framepath):
     origin = np.array([0, 0, 0])
 
     #Szene
-    scene = {
+    general = {
         "ambient": 1,
         "diffuse": 1,
         "specular": 1,
@@ -58,10 +58,21 @@ def main(framepath):
                 "specular": 0.3
             },
         ]
+        lights = [
+            {
+                "xyz": [5, 5, -10],
+            }
+        ]
+
+        scene = {
+            "general": general,
+            "triangles": triangles,
+            "lights": lights
+        }
 
 
 
-        image = cast.render_image(origin, points, triangles, scene)
+        image = cast.render_image(origin, points, scene)
         image.save(f"./frames/{i:0{decimals}d}.bmp")
 
     os.system(

@@ -22,7 +22,7 @@ def vector_from_points(point_1, point_2):
     return point_1-point_2
 
 
-def calculate_color(vectors, points, triangles, scene):
+def calculate_color(vectors, points, scene):
     """gives the color each pixel should have
 
     Parameters
@@ -41,10 +41,10 @@ def calculate_color(vectors, points, triangles, scene):
     ndarray
         color that arrives at every point
     """
-    triangles_coord = np.array([tri["xyz"] for tri in triangles])
-    triangles_color = np.array([tri["color"] for tri in triangles])
-    triangles_diffuse = np.array([tri["diffuse"] for tri in triangles])
-    triangles_specular = np.array([tri["specular"] for tri in triangles])
+    triangles_coord = np.array([tri["xyz"] for tri in scene["triangles"]])
+    triangles_color = np.array([tri["color"] for tri in scene["triangles"]])
+    triangles_diffuse = np.array([tri["diffuse"] for tri in scene["triangles"]])
+    triangles_specular = np.array([tri["specular"] for tri in scene["triangles"]])
 
 
     intersections = inter.intersection_ray_triangle(vectors, points, triangles_coord)
@@ -52,21 +52,21 @@ def calculate_color(vectors, points, triangles, scene):
     color = np.broadcast_to(triangles_color, (intersections.shape[:-1] + (3,)))[..., na, :]
 
 
-    triangles_ambient = np.array([tri["ambient"] for tri in triangles])[..., na]
+    triangles_ambient = np.array([tri["ambient"] for tri in scene["triangles"]])[..., na]
     tri_ambient_br = np.broadcast_to(triangles_ambient, intersections.shape)
 
-    triangles_diffuse = np.array([tri["diffuse"] for tri in triangles])[..., na]
+    triangles_diffuse = np.array([tri["diffuse"] for tri in scene["triangles"]])[..., na]
     tri_diffuse_br = np.broadcast_to(triangles_diffuse, intersections.shape)
 
-    triangles_specular = np.array([tri["specular"] for tri in triangles])[..., na]
+    triangles_specular = np.array([tri["specular"] for tri in scene["triangles"]])[..., na]
     tri_specular_br = np.broadcast_to(triangles_specular, intersections.shape)
 
-    
+
     angle = inter.incidence_angle(triangles_coord, vectors)
 
     # shading
-    shade_ambient = tri_ambient_br * scene["ambient"]
-    shade_diffuse = tri_diffuse_br * scene["diffuse"] * angle
+    shade_ambient = tri_ambient_br * scene["general"]["ambient"]
+    shade_diffuse = tri_diffuse_br * scene["general"]["diffuse"] * angle
 
     shade_combine = shade_ambient + shade_diffuse
 
@@ -122,7 +122,7 @@ def pixel_grid(point_a, point_b, res_b, point_c, res_c):
     return np.array(points)
 
 
-def render_image(pov, points, triangles, scene):
+def render_image(pov, points, scene):
     """renders a pillow image for 3d scene
 
     Parameters
@@ -143,7 +143,7 @@ def render_image(pov, points, triangles, scene):
     """
     vectors = inter.normalize_vector(vector_from_points(points, pov))
 
-    rgb_image = calculate_color(vectors, points, triangles, scene)
+    rgb_image = calculate_color(vectors, points, scene)
     image = Image.fromarray(rgb_image)
     return image
 
@@ -160,7 +160,7 @@ def main():
     origin = np.array([0, 0, 0])
 
     #Szene
-    scene = {
+    general = {
         "ambient": 1,
         "diffuse": 1,
         "specular": 1
@@ -189,8 +189,19 @@ def main():
                 "specular": 0.3
             },
         ]
+    lights = [
+        {
+            "xyz": [5, 5, -10],
+        }
+    ]
 
-    image = render_image(origin, points, triangles, scene)
+    scene = {
+        "general": general,
+        "triangles": triangles,
+        "lights": lights
+    }
+
+    image = render_image(origin, points, scene)
     image.show()
 
 if __name__ == "__main__":
