@@ -154,6 +154,20 @@ def intersection_ray_triangle(line_vec, line_pts, triangles):
     return inter_sc_min_mskd
 
 def incidence_angle(triangle, ray):
+    """returns the angle between two vectors
+
+    Parameters
+    ----------
+    triangle : ndarray
+        ([m], 3) vectors 1
+    ray : ndarray
+        ([m], 3) vectors 2, shape must match
+
+    Returns
+    -------
+    ndarray
+        ([m], 1) 
+    """
     triangle_nrm = normalize_vector(triangle)
     ray_nrm = normalize_vector(ray)
     return np.einsum("...m, ...m -> ...", triangle_nrm, ray_nrm)[..., na]
