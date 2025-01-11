@@ -41,31 +41,43 @@ def calculate_color(vectors, points, scene):
     ndarray
         color that arrives at every point
     """
+    # scene
+    sc_ambient = scene["general"]["ambient"]
+    origin = scene["general"]["origin"]
+
+    # triangle
     triangles_coord = np.array([tri["xyz"] for tri in scene["triangles"]])
     triangles_color = np.array([tri["color"] for tri in scene["triangles"]])
     triangles_diffuse = np.array([tri["diffuse"] for tri in scene["triangles"]])
     triangles_specular = np.array([tri["specular"] for tri in scene["triangles"]])
 
-
+    # intersections
     intersections = inter.intersection_ray_triangle(vectors, points, triangles_coord)
     points_br = np.broadcast_to(points[..., na, :], (intersections.shape[:-1] + (3,)))
     vectors_br = np.broadcast_to(vectors[..., na, :], (intersections.shape[:-1] + (3,)))
     inter_p =  points_br + (intersections * vectors_br)
 
     color = np.broadcast_to(triangles_color, (intersections.shape[:-1] + (3,)))[..., na, :]
-
+    # light
     lights_coord = np.array([light["xyz"] for light in scene["lights"]])
     light_coord_br = np.broadcast_to(lights_coord[..., na, :],
                         (inter_p.shape[:-1] + lights_coord.shape[:-1] + (inter_p.shape[-1],)))
+
+    # other
     inter_p_br = np.broadcast_to(inter_p[..., na, :], light_coord_br.shape)
-    light_ray = inter_p_br - light_coord_br
-    print(light_ray.shape)
-    print(triangles_coord.shape)
-    triangles_nml = inter.normal_from_triangle(triangles_coord)
+    light_ray = inter.normalize_vector(inter_p_br - light_coord_br)
+    triangles_nml = inter.normalize_vector(inter.normal_from_triangle(triangles_coord))
     triangles_nml_br = np.broadcast_to(triangles_nml[..., na, :], light_coord_br.shape)
-    print(triangles_nml_br.shape)
     angle = inter.incidence_angle(triangles_nml_br, light_ray)
 
+    # lights i
+    lights_diffuse = np.array([light["diffuse"] for light in scene["lights"]])[..., na]
+    lights_diffuse_br = np.broadcast_to(lights_diffuse[..., na, :], angle.shape)
+
+    lights_specular = np.array([light["specular"] for light in scene["lights"]])[..., na]
+    lights_specular_br = np.broadcast_to(lights_specular[..., na, :], angle.shape)
+
+    # triangle k
     triangles_ambient = np.array([tri["ambient"] for tri in scene["triangles"]])[..., na]
     tri_ambient_br = np.broadcast_to(triangles_ambient, intersections.shape)
 
@@ -74,12 +86,29 @@ def calculate_color(vectors, points, scene):
 
     triangles_specular = np.array([tri["specular"] for tri in scene["triangles"]])[..., na]
     tri_specular_br = np.broadcast_to(triangles_specular[..., na, :], angle.shape)
+    tri_spec_spr = np.array([tri["specular_spread"] for tri in scene["triangles"]])[..., na]
+    tri_spec_spr_br = np.broadcast_to(tri_spec_spr[..., na, :], angle.shape)
 
     # shading
-    shade_ambient = tri_ambient_br * scene["general"]["ambient"]
-    shade_diffuse = tri_diffuse_br * scene["general"]["diffuse"] * angle
+    # ambient
+    shade_ambient =  sc_ambient * tri_ambient_br
 
-    shade_combine = shade_ambient + np.nansum(shade_diffuse, axis=-2)
+    # diffuse
+    shade_diffuse_br = lights_diffuse_br * tri_diffuse_br * angle
+    shade_diffuse = np.nansum(shade_diffuse_br, axis=-2)
+
+    # specular
+    light_nml_prj = triangles_nml_br * (np.einsum("...jk, ...jk->...j",
+                                                  triangles_nml_br, light_ray)[..., na])
+    light_ref = 2 * light_nml_prj - light_ray
+
+    ray_inter_orig = inter.normalize_vector(inter_p_br - origin)
+    light_ref_ang = np.einsum("...jk, ...jk->...j", light_ref, ray_inter_orig)[..., na]
+    shade_specular_br = lights_specular_br * tri_specular_br * np.power(light_ref_ang, tri_spec_spr_br)
+    shade_specular = np.nansum(shade_specular_br, axis=-2)
+
+    # combine
+    shade_combine = shade_ambient +  shade_diffuse + shade_specular
 
     color_shaded = color * shade_combine[..., na]
 
@@ -165,7 +194,7 @@ def main():
     a = np.array([-5, -5, 5])
     b = np.array([5, -5, 5])
     c = np.array([-5, 5, 5])
-    m = 500
+    m = 1000
     points = pixel_grid(a, b, m, c, m)
 
     origin = np.array([0, 0, 0])
@@ -173,8 +202,7 @@ def main():
     #Szene
     general = {
         "ambient": 1,
-        "diffuse": 1,
-        "specular": 1
+        "origin": origin
     }
 
     #Dreiecke
@@ -187,7 +215,8 @@ def main():
                 "color": [255, 255, 255],
                 "ambient": 0.3,
                 "diffuse": 0.4,
-                "specular": 0.3
+                "specular": 0.3,
+                "specular_spread": 2,
             },
             {
                 "xyz": [
@@ -197,11 +226,14 @@ def main():
                 "color": [0, 255, 0],
                 "ambient": 0.3,
                 "diffuse": 0.4,
-                "specular": 0.3
+                "specular": 0.3,
+                "specular_spread": 2,
             },
         ]
     lights = [
         {
+            "specular": 1,
+            "diffuse": 1,
             "xyz": [5, 5, -10],
         }
     ]

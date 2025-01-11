@@ -29,8 +29,7 @@ def main(framepath):
     #Szene
     general = {
         "ambient": 1,
-        "diffuse": 1,
-        "specular": 1,
+        "origin": origin
     }
 
     #Dreiecke
@@ -45,7 +44,8 @@ def main(framepath):
                 "color": [255, 255, 255],
                 "ambient": 0.3,
                 "diffuse": 0.4,
-                "specular": 0.3
+                "specular": 0.3,
+                "specular_spread": 2,
             },
             {
                 "xyz": [
@@ -55,13 +55,17 @@ def main(framepath):
                 "color": [0, 255, 0],
                 "ambient": 0.3,
                 "diffuse": 0.4,
-                "specular": 0.3
+                "specular": 0.3,
+                "specular_spread": 2,
             },
         ]
         lights = [
             {
                 "xyz": [5, 5, -10],
-            }
+                "diffuse": 1,
+                "specular": 1,
+            },
+
         ]
 
         scene = {
