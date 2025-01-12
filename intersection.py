@@ -1,4 +1,8 @@
-"""Provides functions for calculating intersections
+"""
+# Intersection
+Provides functions for 
+- working with vectors and triangles
+- calculating intersections
 """
 import warnings
 import numpy as np
@@ -153,7 +157,7 @@ def intersection_ray_triangle(line_vec, line_pts, triangles):
     inter_sc_min_mskd = np.where(inter_min_mask, inter_sc, np.nan) # also nan if not first hit
     return inter_sc_min_mskd
 
-def incidence_angle(triangle, ray):
+def vector_angle(triangle, ray):
     """returns the angle between two vectors
 
     Parameters
@@ -170,4 +174,6 @@ def incidence_angle(triangle, ray):
     """
     triangle_nrm = normalize_vector(triangle)
     ray_nrm = normalize_vector(ray)
-    return np.einsum("...m, ...m -> ...", triangle_nrm, ray_nrm)[..., na]
+    angle = np.einsum("...m, ...m -> ...", triangle_nrm, ray_nrm)[..., na]
+    absolute = np.abs(angle)
+    return absolute

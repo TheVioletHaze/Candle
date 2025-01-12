@@ -1,15 +1,47 @@
+"""
+# Animation
+Functionality for:
+- animating multiple frames in a scene
+- merging frames into a video
+"""
 import shutil
 from pathlib import Path
 import os
 import numpy as np
-from PIL import Image
 
 import casting as cast
+
+def transform_dict(input_dict):
+    """allows shortcuts in a dictionary.
+
+    Parameters
+    ----------
+    input_dict : dictionary
+        dictionary with shortcuts
+
+    Returns
+    -------
+    dictionary
+        dictionary where shortcuts are expanded
+    """
+    output_dict = {}
+
+    for key, value in input_dict.items():
+        if key == "material":
+            if value == "1":
+                output_dict["ambient"] = 0.3
+                output_dict["diffuse"] = 0.4
+                output_dict["specular"] = 0.3
+                output_dict["specular_spread"] = 2
+        else:
+            output_dict[key] = value
+    return output_dict
 
 def main(framepath):
     """testing method
     """
-    frame_num = 30
+    frame_num = 2
+    fps = 10
     decimals = len(str(frame_num)) +1
 
     if framepath.exists() and framepath.is_dir():
@@ -42,10 +74,8 @@ def main(framepath):
                     [-14, 30, 40 + (i*a)],
                     [30, -14, 40 + (i*a)]],
                 "color": [255, 255, 255],
-                "ambient": 0.3,
-                "diffuse": 0.4,
-                "specular": 0.3,
-                "specular_spread": 2,
+                "material": "1",
+
             },
             {
                 "xyz": [
@@ -53,10 +83,8 @@ def main(framepath):
                     [-3.2,-3.5, 7],
                     [-3.5,-3.2, 7]],
                 "color": [0, 255, 0],
-                "ambient": 0.3,
-                "diffuse": 0.4,
-                "specular": 0.3,
-                "specular_spread": 2,
+                "material": "1",
+
             },
         ]
         lights = [
@@ -68,6 +96,7 @@ def main(framepath):
 
         ]
 
+        triangles = [transform_dict(tri) for tri in triangles]
         scene = {
             "general": general,
             "triangles": triangles,
@@ -80,8 +109,9 @@ def main(framepath):
         image.save(f"./frames/{i:0{decimals}d}.bmp")
 
     os.system(
-        f"ffmpeg -r 10/1 -start_number 1 -i \
-        {framepath}/%{decimals}d.bmp -c:v libx264 -r 30 -pix_fmt yuv420p out.mp4 -y")
+        f"ffmpeg -r {fps}/1 -start_number 1 -i \
+        {framepath}/%{decimals}d.bmp -c:v libx264 \
+          -r 30 -pix_fmt yuv420p out.mp4 -y -hide_banner -loglevel warning")
 
 if __name__ == "__main__":
     FRAMEPATH  = Path("./frames") # files in folder will be deleted!!!

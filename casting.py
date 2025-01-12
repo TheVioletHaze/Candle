@@ -1,3 +1,9 @@
+"""
+# Casting
+Functionality for:
+- casting rays in a scene
+- calculating color
+"""
 import numpy as np
 from numpy import newaxis as na
 from PIL import Image
@@ -68,7 +74,7 @@ def calculate_color(vectors, points, scene):
     light_ray = inter.normalize_vector(inter_p_br - light_coord_br)
     triangles_nml = inter.normalize_vector(inter.normal_from_triangle(triangles_coord))
     triangles_nml_br = np.broadcast_to(triangles_nml[..., na, :], light_coord_br.shape)
-    angle = inter.incidence_angle(triangles_nml_br, light_ray)
+    angle = inter.vector_angle(triangles_nml_br, light_ray)
 
     # lights i
     lights_diffuse = np.array([light["diffuse"] for light in scene["lights"]])[..., na]
@@ -103,8 +109,9 @@ def calculate_color(vectors, points, scene):
     light_ref = 2 * light_nml_prj - light_ray
 
     ray_inter_orig = inter.normalize_vector(inter_p_br - origin)
-    light_ref_ang = np.einsum("...jk, ...jk->...j", light_ref, ray_inter_orig)[..., na]
-    shade_specular_br = lights_specular_br * tri_specular_br * np.power(light_ref_ang, tri_spec_spr_br)
+    light_ref_ang = inter.vector_angle(light_ref, ray_inter_orig)
+    ang_power = np.power(light_ref_ang, tri_spec_spr_br)
+    shade_specular_br = lights_specular_br * tri_specular_br * ang_power
     shade_specular = np.nansum(shade_specular_br, axis=-2)
 
     # combine
