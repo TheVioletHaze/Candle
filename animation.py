@@ -11,37 +11,18 @@ import numpy as np
 
 import casting as cast
 
-def transform_dict(input_dict):
-    """allows shortcuts in a dictionary.
-
-    Parameters
-    ----------
-    input_dict : dictionary
-        dictionary with shortcuts
-
-    Returns
-    -------
-    dictionary
-        dictionary where shortcuts are expanded
-    """
-    output_dict = {}
-
-    for key, value in input_dict.items():
-        if key == "material":
-            if value == "1":
-                output_dict["ambient"] = 0.3
-                output_dict["diffuse"] = 0.4
-                output_dict["specular"] = 0.3
-                output_dict["specular_spread"] = 2
-        else:
-            output_dict[key] = value
-    return output_dict
 
 def main(framepath):
     """testing method
     """
-    frame_num = 2
-    fps = 10
+    total_distance = 0
+    total_diffuse = 0
+    total_import = 0
+    total_intersection = 0
+    total_specular = 0
+
+    frame_num = 5
+    fps = 30
     decimals = len(str(frame_num)) +1
 
     if framepath.exists() and framepath.is_dir():
@@ -61,7 +42,8 @@ def main(framepath):
     #Szene
     general = {
         "ambient": 1,
-        "origin": origin
+        "origin": origin,
+        "distance_constants": (1, 0.02, 0.01),
     }
 
     #Dreiecke
@@ -96,17 +78,28 @@ def main(framepath):
 
         ]
 
-        triangles = [transform_dict(tri) for tri in triangles]
+        triangles = [cast.transform_dict(tri) for tri in triangles]
         scene = {
             "general": general,
             "triangles": triangles,
-            "lights": lights
+            "lights": lights,
         }
 
 
-
         image = cast.render_image(origin, points, scene)
-        image.save(f"./frames/{i:0{decimals}d}.bmp")
+
+        total_distance = total_distance + image[1][0]
+        total_diffuse = total_diffuse + image[1][1]
+        total_import = total_import + image[1][2]
+        total_intersection = total_intersection + image[1][3]
+        total_specular = total_specular + image[1][4]
+        image[0].save(f"./frames/{i:0{decimals}d}.bmp")
+    
+    print("import:          ", total_import)
+    print("intersection:    ", total_intersection)
+    print("distance:        ", total_distance)
+    print("diffuse:         ", total_diffuse)
+    print("specular:        ", total_specular)
 
     os.system(
         f"ffmpeg -r {fps}/1 -start_number 1 -i \

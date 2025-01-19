@@ -7,6 +7,7 @@ Provides functions for
 import warnings
 import numpy as np
 from numpy import newaxis as na
+from opt_einsum import contract
 warnings.filterwarnings('ignore', r'All-NaN (slice|axis) encountered')
 warnings.filterwarnings('ignore', r'invalid value encountered in divide')
 
@@ -72,9 +73,9 @@ def intersection_pln_line(triangle_pl_pts, triangle_pl_nml, line_vec, line_pts):
     """
 
     po_qo = line_pts[..., na, :] - triangle_pl_pts[na, :, :] # (Strahl, Ebene, Punkt)
-    n_po_qo = np.einsum("...jk, jk->...j", po_qo, triangle_pl_nml)[..., na] * -1
+    n_po_qo = contract("...jk, jk->...j", po_qo, triangle_pl_nml, optimize='optimal')[..., na] * -1
 
-    n_p = np.einsum("...k, jk->...j", line_vec, triangle_pl_nml)[..., na]
+    n_p = contract("...k, jk->...j", line_vec, triangle_pl_nml, optimize='optimal')[..., na]
 
     t = n_po_qo / n_p
     return t
@@ -109,8 +110,8 @@ def inside_out_test(triangles, normals, points):
     points_vert = points[..., na, :] - offset1
     vert_opp = triangles - offset1
 
-    point_dotprods = np.einsum("...n, ...n -> ...", points_vert, line_normals)[..., na]
-    vert_dotprods = np.einsum("...n, ...n -> ...", vert_opp, line_normals)[..., na]
+    point_dotprods = contract("...n, ...n -> ...", points_vert, line_normals, optimize='optimal')[..., na]
+    vert_dotprods = contract("...n, ...n -> ...", vert_opp, line_normals, optimize='optimal')[..., na]
 
     points_vert_multi = point_dotprods * vert_dotprods
     side_inter_bool = points_vert_multi > 0
