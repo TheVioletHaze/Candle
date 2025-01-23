@@ -4,12 +4,17 @@ Functionality for:
 - casting rays in a scene
 - calculating color
 """
+import warnings
 import numpy as np
 from numpy import newaxis as na
 from PIL import Image
 import intersection as inter
 import time
 import timeit
+
+warnings.filterwarnings('ignore', r'All-NaN (slice|axis) encountered')
+warnings.filterwarnings('ignore', r'invalid value encountered in divide')
+
 
 def transform_dict(input_dict):
     """allows shortcuts in a dictionary.
@@ -145,7 +150,7 @@ def calculate_color(vectors, points, scene):
     # triangle k
     triangles_ambient = np.array([tri["ambient"] for tri in scene["triangles"]])[..., na]
     tri_ambient_br = np.broadcast_to(triangles_ambient, intersections.shape)
-
+    tri_amb_max = np.max(tri_ambient_br, -2)[..., na]
     triangles_diffuse = np.array([tri["diffuse"] for tri in scene["triangles"]])[..., na]
     tri_diffuse_br = np.broadcast_to(triangles_diffuse[..., na, :], angle.shape)
 
@@ -161,12 +166,12 @@ def calculate_color(vectors, points, scene):
     phong_dist_div = 1 / phong_distance
     total_distance =  total_distance - start_distance + time.time()
     # ambient
-    shade_ambient =  sc_ambient * tri_ambient_br
+    shade_ambient =  sc_ambient * tri_amb_max
 
     # diffuse
     start_diffuse = time.time()
     shade_diffuse_br = lights_diffuse_br * tri_diffuse_br * angle * phong_dist_div
-    shade_diffuse = np.nansum(shade_diffuse_br, axis=-2)
+    shade_diffuse = np.nansum(shade_diffuse_br, axis=-3)
     total_diffuse = total_diffuse - start_diffuse + time.time()
 
     # specular
@@ -179,17 +184,29 @@ def calculate_color(vectors, points, scene):
     light_ref_ang = inter.vector_angle(light_ref, ray_inter_orig)
     ang_power = np.power(light_ref_ang, tri_spec_spr_br)
     shade_specular_br = lights_specular_br * tri_specular_br * ang_power * phong_dist_div
-    shade_specular = np.nansum(shade_specular_br, axis=-2)
+    shade_specular = np.nansum(shade_specular_br, axis=-3)
     total_specular = total_specular - start_specular + time.time()
 
     # combine
-    shade_combine = shade_ambient +  shade_diffuse + shade_specular
+    shade_combine = shade_ambient + shade_specular + shade_diffuse
+    print(shade_ambient.shape)
+    print(shade_combine[100, 125])
+    print(shade_combine[101, 130])
+    print(shade_diffuse.shape)
+    print(shade_specular.shape)
+    print(shade_combine.shape)
 
     color_shaded = color * shade_combine[..., na]
 
     not_nan_mask = ~np.isnan(intersections)[..., na]
+    print("inter 1:  ", intersections[100, 125])
+    print("inter 2:  ", intersections[101, 130])
     color_mskd = np.where(not_nan_mask, color_shaded, np.nan)
-    color_sum = np.nansum(color_mskd, axis=-3)
+    print("mskd 1:  ", color_mskd[100, 125])
+    print("mskd 2:  ",color_mskd[101, 130])
+    color_sum = np.nanmin(color_mskd, axis=-3)
+    print("sum 1:   ", color_sum[100, 125])
+    print("sum 2:   ", color_sum[101, 130])
     color_abs = np.abs(color_sum)
     color_squeeze= np.squeeze(color_abs)
 
@@ -269,12 +286,12 @@ def main():
     """
     #Strahlen
     a = np.array([-20, 5, 20])
-    b = np.array([-20, 5, -20])
-    c = np.array([20, 5, -20])
+    b = np.array([20, 5, 20])
+    c = np.array([-20, 5, -20])
     m = 500
     points = pixel_grid(a, b, m, c, m)
 
-    origin = np.array([0, 0, 0])
+    origin = np.array([0, -80, 0])
 
     #Szene
     general = {
@@ -284,39 +301,34 @@ def main():
     }
 
     #Dreiecke
-    A = [2.96718,48.26412,3.09627]
-    B = [7.00944,42.53687,24.81562]
-    C = [15.41,56.12,28.31]
-    D = [20.26, 57.13, 12.72]
-    E = [-1.31, 52.59, 5.73]
-    F = [-6.15, 51.58, 21.31]
-    G = [2.25, 65.16, 24.8]
-    H = [7.09, 66.17, 9.22]
+    A = [8.212623255035851, -11.144937126969154, 3.09627]
+    B = [-10, -10, -5.875937082942073]
+    C = [-16.06321700689356, 3.422827015985419, 8.144624290270826]
+    D_1 = [2.149406248142289, 2.2778898890162687, 17.1168313732129]
+    E_1 = [14.924462085879824, 4.087523628535864, -8.584243072402062]
+    F_1 = [0, 0, 0]
+    G_1 = [-9.35137817604959, 18.655287771490443, -3.535888782131235]
+    H_1 = [8.861245078986261, 17.51035064452129, 5.436318300810839]
     triangles = [
             {
-                "xyz": [
-                    A,
-                    [-14, 30, 40],
-                    [30, -14, 40]],
+                "xyz": [A, B, C],
                 "color": [255, 255, 255],
                 "material": "1",
 
             },
             {
-                "xyz": [
-                    [-3,-3, 7],
-                    [-3.2,-3.5, 7],
-                    [-3.5,-3.2, 7]],
-                "color": [0, 255, 0],
+                "xyz": [A, C, D_1],
+                "color": [255, 255, 255],
                 "material": "1",
 
             },
+
         ]
     lights = [
         {
             "specular": 1,
             "diffuse": 1,
-            "xyz": [5, 5, -10],
+            "xyz": [5, 5, -10], 
         }
     ]
 
@@ -328,6 +340,7 @@ def main():
     }
 
     image = render_image(origin, points, scene)[0]
+    image.save("temp.png")
     image.show()
 
 if __name__ == "__main__":

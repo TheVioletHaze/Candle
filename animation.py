@@ -94,7 +94,7 @@ def main(framepath):
         total_intersection = total_intersection + image[1][3]
         total_specular = total_specular + image[1][4]
         image[0].save(f"./frames/{i:0{decimals}d}.bmp")
-    
+
     print("import:          ", total_import)
     print("intersection:    ", total_intersection)
     print("distance:        ", total_distance)

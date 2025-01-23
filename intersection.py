@@ -8,6 +8,7 @@ import warnings
 import numpy as np
 from numpy import newaxis as na
 from opt_einsum import contract
+
 warnings.filterwarnings('ignore', r'All-NaN (slice|axis) encountered')
 warnings.filterwarnings('ignore', r'invalid value encountered in divide')
 
@@ -104,14 +105,13 @@ def inside_out_test(triangles, normals, points):
     offset2 = np.roll(triangles, -2, axis=-2) # [c, b, a]
 
     line_vec = offset1 - offset2 # opposite side
-    line_vec = offset1 - offset2 # opposite side
     line_normals = np.cross(line_vec, normals[..., na, :]) # normal of the opposite side
 
     points_vert = points[..., na, :] - offset1
     vert_opp = triangles - offset1
 
-    point_dotprods = contract("...n, ...n -> ...", points_vert, line_normals, optimize='optimal')[..., na]
-    vert_dotprods = contract("...n, ...n -> ...", vert_opp, line_normals, optimize='optimal')[..., na]
+    point_dotprods = contract("...n, ...n -> ...", points_vert, line_normals)[..., na]
+    vert_dotprods = contract("...n, ...n -> ...", vert_opp, line_normals)[..., na]
 
     points_vert_multi = point_dotprods * vert_dotprods
     side_inter_bool = points_vert_multi > 0
@@ -156,7 +156,8 @@ def intersection_ray_triangle(line_vec, line_pts, triangles):
     inter_sc_min = np.nanmin(inter_sc_hit_mskd, axis=-2, keepdims=True)
     inter_min_mask = inter_sc == inter_sc_min
     inter_sc_min_mskd = np.where(inter_min_mask, inter_sc, np.nan) # also nan if not first hit
-    return inter_sc_min_mskd
+    inter_sc_min_dmskd = np.where(inter_hits_mask, inter_sc_min_mskd, np.nan) # nonhits on val dups
+    return inter_sc_min_dmskd
 
 def vector_angle(triangle, ray):
     """returns the angle between two vectors
