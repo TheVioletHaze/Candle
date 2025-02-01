@@ -47,7 +47,8 @@ def normal_from_triangle(triangles):
     """
     a_b = triangles[..., 0, :] - triangles[..., 1, :]
     a_c = triangles[..., 0, :] - triangles[..., 2, :]
-    return np.cross(a_b, a_c)
+    normals = np.cross(a_b, a_c)
+    return normals
 
 
 def intersection_pln_line(triangle_pl_pts, triangle_pl_nml, line_vec, line_pts):
