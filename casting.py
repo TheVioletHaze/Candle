@@ -9,9 +9,6 @@ import numpy as np
 from numpy import newaxis as na
 from PIL import Image
 import intersection as inter
-import time
-import timeit
-
 warnings.filterwarnings('ignore', r'All-NaN (slice|axis) encountered')
 warnings.filterwarnings('ignore', r'invalid value encountered in divide')
 
@@ -58,7 +55,7 @@ def vector_from_points(point_1, point_2):
     ndarray
         ([m], 3)([line], coordinate)
     """
-    return point_1-point_2
+    return point_2 - point_1
 
 def point_distance(point_1, point_2):
     """Returns the distance between point a and b
@@ -98,12 +95,6 @@ def calculate_color(vectors, points, scene):
     ndarray
         color that arrives at every point
     """
-    start_import = time.time() # todo
-    total_distance = 0
-    total_diffuse = 0
-    total_import = 0
-    total_intersection = 0
-    total_specular = 0
     # scene
     sc_ambient = scene["general"]["ambient"]
     origin = scene["general"]["origin"]
@@ -118,11 +109,8 @@ def calculate_color(vectors, points, scene):
     triangles_diffuse = np.array([tri["diffuse"] for tri in scene["triangles"]])
     triangles_specular = np.array([tri["specular"] for tri in scene["triangles"]])
 
-    total_import = total_import - start_import + time.time()
     # intersections
-    start_intersection = time.time()
     intersections = inter.intersection_ray_triangle(vectors, points, triangles_coord)
-    total_intersection = total_intersection - start_intersection + time.time()
     points_br = np.broadcast_to(points[..., na, :], (intersections.shape[:-1] + (3,)))
     vectors_br = np.broadcast_to(vectors[..., na, :], (intersections.shape[:-1] + (3,)))
     inter_p =  points_br + (intersections * vectors_br)
@@ -160,22 +148,17 @@ def calculate_color(vectors, points, scene):
     tri_spec_spr_br = np.broadcast_to(tri_spec_spr[..., na, :], angle.shape)
 
     # shading
-    start_distance = time.time()
     distance = point_distance(inter_p_br, light_coord_br)
     phong_distance = dist_const_0 + (distance * dist_const_1) + (np.square(distance) * dist_const_2)
     phong_dist_div = 1 / phong_distance
-    total_distance =  total_distance - start_distance + time.time()
     # ambient
     shade_ambient =  sc_ambient * tri_amb_max
 
     # diffuse
-    start_diffuse = time.time()
     shade_diffuse_br = lights_diffuse_br * tri_diffuse_br * angle * phong_dist_div
     shade_diffuse = np.nansum(shade_diffuse_br, axis=-3)
-    total_diffuse = total_diffuse - start_diffuse + time.time()
 
     # specular
-    start_specular = time.time()
     light_nml_prj = triangles_nml_br * (np.einsum("...jk, ...jk->...j",
                                                   triangles_nml_br, light_ray)[..., na])
     light_ref = 2 * light_nml_prj - light_ray
@@ -185,36 +168,19 @@ def calculate_color(vectors, points, scene):
     ang_power = np.power(light_ref_ang, tri_spec_spr_br)
     shade_specular_br = lights_specular_br * tri_specular_br * ang_power * phong_dist_div
     shade_specular = np.nansum(shade_specular_br, axis=-3)
-    total_specular = total_specular - start_specular + time.time()
 
     # combine
     shade_combine = shade_ambient + shade_specular + shade_diffuse
-    print(shade_ambient.shape)
-    print(shade_combine[100, 125])
-    print(shade_combine[101, 130])
-    print(shade_diffuse.shape)
-    print(shade_specular.shape)
-    print(shade_combine.shape)
-
     color_shaded = color * shade_combine[..., na]
-
     not_nan_mask = ~np.isnan(intersections)[..., na]
-    print("inter 1:  ", intersections[100, 125])
-    print("inter 2:  ", intersections[101, 130])
     color_mskd = np.where(not_nan_mask, color_shaded, np.nan)
-    print("mskd 1:  ", color_mskd[100, 125])
-    print("mskd 2:  ",color_mskd[101, 130])
     color_sum = np.nanmin(color_mskd, axis=-3)
-    print("sum 1:   ", color_sum[100, 125])
-    print("sum 2:   ", color_sum[101, 130])
     color_abs = np.abs(color_sum)
     color_squeeze= np.squeeze(color_abs)
 
     np.where(color_squeeze, color_squeeze > 255, 255)
     rgb_image = color_squeeze.astype(np.uint8)
-
-    
-    return (rgb_image, total_distance, total_diffuse, total_import, total_intersection, total_specular)
+    return rgb_image
 
 def pixel_grid(point_a, point_b, res_b, point_c, res_c):
     """returns point grid between three points to simulate screen
@@ -276,22 +242,21 @@ def render_image(pov, points, scene):
         pillow image render of scene
     """
     vectors = inter.normalize_vector(vector_from_points(pov, points))
-
     rgb_image = calculate_color(vectors, points, scene)
-    image = Image.fromarray(rgb_image[0])
-    return (image, rgb_image[1:6])
+    image = Image.fromarray(rgb_image)
+    return image
 
 def main():
     """testing method
     """
     #Strahlen
     a = np.array([-20, 5, 20])
-    b = np.array([20, 5, 20])
-    c = np.array([-20, 5, -20])
-    m = 500
+    b = np.array([-20, 5, -20])
+    c = np.array([20, 5, 20])
+    m = 2000
     points = pixel_grid(a, b, m, c, m)
 
-    origin = np.array([0, -80, 0])
+    origin = np.array([0, -40, 0])
 
     #Szene
     general = {
@@ -301,28 +266,51 @@ def main():
     }
 
     #Dreiecke
-    A = [8.212623255035851, -11.144937126969154, 3.09627]
-    B = [-10, -10, -5.875937082942073]
-    C = [-16.06321700689356, 3.422827015985419, 8.144624290270826]
-    D_1 = [2.149406248142289, 2.2778898890162687, 17.1168313732129]
-    E_1 = [14.924462085879824, 4.087523628535864, -8.584243072402062]
-    F_1 = [0, 0, 0]
-    G_1 = [-9.35137817604959, 18.655287771490443, -3.535888782131235]
-    H_1 = [8.861245078986261, 17.51035064452129, 5.436318300810839]
+    A_1 = [8.21262, 18.85506, 3.09627]
+    B_1 = [-10, 20, -5.87594]
+    C_1 = [-16.063217043248358, 33.422827240347814, 8.144619015757515]
+    D_1 = [2.149402956751641, 32.277887240347816, 17.116829015757514]
+    E_1 = [14.924463187542646, 34.0875183841308, -8.58424110840877]
+    F_1 = [-3.2881568124573537, 35.2324583841308, -17.55645110840877]
+    G_1 = [-9.351373855705711, 48.655285624478616, -3.5358920926512583]
+    H_1 = [8.861246144294288, 47.51034562447862, 5.436317907348743]
     triangles = [
             {
-                "xyz": [A, B, C],
-                "color": [255, 255, 255],
+                "xyz": [A_1, B_1, C_1],
+                "color": [0, 255, 255],
                 "material": "1",
 
             },
             {
-                "xyz": [A, C, D_1],
-                "color": [255, 255, 255],
+                "xyz": [A_1, C_1, D_1],
+                "color": [0, 255, 255],
                 "material": "1",
 
             },
+            {
+                "xyz": [A_1, B_1, E_1],
+                "color": [255, 255, 0],
+                "material": "1",
 
+            },
+            {
+                "xyz": [F_1, B_1, E_1],
+                "color": [255, 255, 0],
+                "material": "1",
+
+            },
+            {
+                "xyz": [A_1, D_1, H_1],
+                "color": [255, 0, 255],
+                "material": "1",
+
+            },
+            {
+                "xyz": [A_1, H_1, E_1],
+                "color": [255, 0, 255],
+                "material": "1",
+
+            },
         ]
     lights = [
         {
@@ -339,7 +327,7 @@ def main():
         "lights": lights
     }
 
-    image = render_image(origin, points, scene)[0]
+    image = render_image(origin, points, scene)
     image.save("temp.png")
     image.show()
 
