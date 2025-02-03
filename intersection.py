@@ -121,7 +121,7 @@ def inside_out_test(triangles, normals, points):
 
 
 
-def intersection_ray_triangle(line_vec, line_pts, triangles):
+def intersection_ray_triangle(line_vec, line_pts, triangles, triangle_pl_nml):
     """Returns the scalar of the first intersection point of rays for given triangles. 
     Triangles not first hit or missed nan.
 
@@ -145,7 +145,6 @@ def intersection_ray_triangle(line_vec, line_pts, triangles):
         raise ValueError(f"shape of line_vec {vec_shape} and line_pts {pts_shape} doesn't match.")
 
     triangle_pl_pts = triangles[:, 0]
-    triangle_pl_nml = normal_from_triangle(triangles)
 
     # Schnittpunkte
     inter_sc = intersection_pln_line(triangle_pl_pts, triangle_pl_nml, line_vec, line_pts)

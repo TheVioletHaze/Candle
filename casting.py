@@ -105,12 +105,13 @@ def calculate_color(vectors, points, scene):
 
     # triangle
     triangles_coord = np.array([tri["xyz"] for tri in scene["triangles"]])
+    triangle_nmls = np.array([tri["normal"] for tri in scene["triangles"]])
     triangles_color = np.array([tri["color"] for tri in scene["triangles"]])
     triangles_diffuse = np.array([tri["diffuse"] for tri in scene["triangles"]])
     triangles_specular = np.array([tri["specular"] for tri in scene["triangles"]])
 
     # intersections
-    intersections = inter.intersection_ray_triangle(vectors, points, triangles_coord)
+    intersections = inter.intersection_ray_triangle(vectors, points, triangles_coord, triangle_nmls)
     points_br = np.broadcast_to(points[..., na, :], (intersections.shape[:-1] + (3,)))
     vectors_br = np.broadcast_to(vectors[..., na, :], (intersections.shape[:-1] + (3,)))
     inter_p =  points_br + (intersections * vectors_br)
@@ -245,91 +246,3 @@ def render_image(pov, points, scene):
     rgb_image = calculate_color(vectors, points, scene)
     image = Image.fromarray(rgb_image)
     return image
-
-def main():
-    """testing method
-    """
-    #Strahlen
-    a = np.array([-20, 5, 20])
-    b = np.array([-20, 5, -20])
-    c = np.array([20, 5, 20])
-    m = 2000
-    points = pixel_grid(a, b, m, c, m)
-
-    origin = np.array([0, -40, 0])
-
-    #Szene
-    general = {
-        "ambient": 1,
-        "origin": origin,
-        "distance_constants": (1, 0.02, 0.01),
-    }
-
-    #Dreiecke
-    A_1 = [8.21262, 18.85506, 3.09627]
-    B_1 = [-10, 20, -5.87594]
-    C_1 = [-16.063217043248358, 33.422827240347814, 8.144619015757515]
-    D_1 = [2.149402956751641, 32.277887240347816, 17.116829015757514]
-    E_1 = [14.924463187542646, 34.0875183841308, -8.58424110840877]
-    F_1 = [-3.2881568124573537, 35.2324583841308, -17.55645110840877]
-    G_1 = [-9.351373855705711, 48.655285624478616, -3.5358920926512583]
-    H_1 = [8.861246144294288, 47.51034562447862, 5.436317907348743]
-    triangles = [
-            {
-                "xyz": [A_1, B_1, C_1],
-                "color": [0, 255, 255],
-                "material": "1",
-
-            },
-            {
-                "xyz": [A_1, C_1, D_1],
-                "color": [0, 255, 255],
-                "material": "1",
-
-            },
-            {
-                "xyz": [A_1, B_1, E_1],
-                "color": [255, 255, 0],
-                "material": "1",
-
-            },
-            {
-                "xyz": [F_1, B_1, E_1],
-                "color": [255, 255, 0],
-                "material": "1",
-
-            },
-            {
-                "xyz": [A_1, D_1, H_1],
-                "color": [255, 0, 255],
-                "material": "1",
-
-            },
-            {
-                "xyz": [A_1, H_1, E_1],
-                "color": [255, 0, 255],
-                "material": "1",
-
-            },
-        ]
-    lights = [
-        {
-            "specular": 1,
-            "diffuse": 1,
-            "xyz": [5, 5, -10], 
-        }
-    ]
-
-    triangles = [transform_dict(tri) for tri in triangles]
-    scene = {
-        "general": general,
-        "triangles": triangles,
-        "lights": lights
-    }
-
-    image = render_image(origin, points, scene)
-    image.save("temp.png")
-    image.show()
-
-if __name__ == "__main__":
-    main()
