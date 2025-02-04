@@ -30,7 +30,12 @@ def transform_dict(input_dict):
 
     for key, value in input_dict.items():
         if key == "material":
-            if value == "1":
+            if value == "0":
+                output_dict["ambient"] = 0.3
+                output_dict["diffuse"] = 0.4
+                output_dict["specular"] = 0.3
+                output_dict["specular_spread"] = 2
+            elif value == "1":
                 output_dict["ambient"] = 0.3
                 output_dict["diffuse"] = 0.4
                 output_dict["specular"] = 0.3

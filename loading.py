@@ -16,7 +16,7 @@ def main():
     a = np.array([-20, -5, 20])
     b = np.array([-20, -5, -20])
     c = np.array([20, -5, 20])
-    m = 500 # resolution
+    m = 3 # resolution
     points = cast.pixel_grid(a, b, m, c, m)
 
     origin = np.array([0, -80, 0])
@@ -35,6 +35,13 @@ def main():
     object_mesh = mesh.Mesh.from_file(stl_file)
 
     triangles = []
+    nan_triangle = { # necessary for index
+        "normal": np.array([np.nan, np.nan, np.nan]),
+        "xyz": np.array([[np.nan, np.nan, np.nan], [np.nan, np.nan, np.nan], [np.nan, np.nan, np.nan]]),
+        "color": np.array([np.nan, np.nan, np.nan]),
+        "material": "0"
+    }
+    triangles.append(nan_triangle)
     for triangle in object_mesh.data:
         triangle_dict = {
             "normal": triangle[0],
