@@ -10,13 +10,13 @@ warnings.filterwarnings('ignore', r'invalid value encountered in divide')
 
 
 def main():
-    """testing method
+    """takes an stl file given as CLI argument, calculates color for every pixel and shows image
     """
     #Strahlen
     a = np.array([-20, -5, 20])
     b = np.array([-20, -5, -20])
     c = np.array([20, -5, 20])
-    m = 3 # resolution
+    m = 1000 # resolution
     points = cast.pixel_grid(a, b, m, c, m)
 
     origin = np.array([0, -80, 0])
@@ -29,16 +29,15 @@ def main():
     }
 
     #Dreiecke
-
-
     stl_file = sys.argv[1]
     object_mesh = mesh.Mesh.from_file(stl_file)
 
     triangles = []
+    nan_arr =[np.nan, np.nan, np.nan]
     nan_triangle = { # necessary for index
-        "normal": np.array([np.nan, np.nan, np.nan]),
-        "xyz": np.array([[np.nan, np.nan, np.nan], [np.nan, np.nan, np.nan], [np.nan, np.nan, np.nan]]),
-        "color": np.array([np.nan, np.nan, np.nan]),
+        "normal": np.array(nan_arr),
+        "xyz": np.array([nan_arr, nan_arr, nan_arr]),
+        "color": np.array(nan_arr),
         "material": "0"
     }
     triangles.append(nan_triangle)
@@ -51,7 +50,6 @@ def main():
         }
         triangles.append(triangle_dict)
     triangles = [cast.transform_dict(tri) for tri in triangles]
-
 
     lights = [
         {
