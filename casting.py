@@ -11,7 +11,7 @@ from PIL import Image
 import intersection as inter
 warnings.filterwarnings('ignore', r'All-NaN (slice|axis) encountered')
 warnings.filterwarnings('ignore', r'invalid value encountered in divide')
-
+TEST = (30, 9)
 
 def transform_dict(input_dict):
     """allows shortcuts in a dictionary.
@@ -31,14 +31,14 @@ def transform_dict(input_dict):
     for key, value in input_dict.items():
         if key == "material":
             if value == "0":
-                output_dict["ambient"] = 0.3
+                output_dict["ambient"] = 0.2
                 output_dict["diffuse"] = 0.4
                 output_dict["specular"] = 0.3
                 output_dict["specular_spread"] = 2
             elif value == "1":
-                output_dict["ambient"] = 0.3
-                output_dict["diffuse"] = 0.4
-                output_dict["specular"] = 0.3
+                output_dict["ambient"] = 0.15
+                output_dict["diffuse"] = 0.45
+                output_dict["specular"] = 0.4
                 output_dict["specular_spread"] = 2
         else:
             output_dict[key] = value
@@ -127,6 +127,10 @@ def calculate_color(vectors, points, scene):
     lights_diffuse = np.array([light["diffuse"] for light in scene["lights"]])[..., na]
     lights_specular = np.array([light["specular"] for light in scene["lights"]])[..., na]
 
+    # shadow
+    light_ray = inter.normalize_vector(inter_p[..., na, :] - lights_coord)
+    print(inter_p.shape)
+    print(light_ray.shape)
     # shading
     light_ray = inter.normalize_vector(inter_p[..., na, :] - lights_coord)
     angle = inter.vector_angle(light_ray, triangle_nmls[inter_index])
@@ -134,6 +138,7 @@ def calculate_color(vectors, points, scene):
     distance = point_distance(inter_p[..., na, :], lights_coord_br)
     phong_distance = dist_const_0 + (distance * dist_const_1) + (np.square(distance) * dist_const_2)
     phong_dist_div = 1 / phong_distance
+
     # ambient
     shade_ambient =  sc_ambient * triangles_ambient
 
@@ -141,6 +146,7 @@ def calculate_color(vectors, points, scene):
     shade_diffuse_br = \
         lights_diffuse * triangles_diffuse[inter_index][..., na] * angle * phong_dist_div
     shade_diffuse = np.nansum(shade_diffuse_br, axis=-2)
+    print(shade_diffuse[TEST])
 
     # specular
     light_nml_prj = triangle_nmls[inter_index] * \
