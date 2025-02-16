@@ -9,6 +9,7 @@ import numpy as np
 from numpy import newaxis as na
 from PIL import Image
 import intersection as inter
+import sys
 warnings.filterwarnings('ignore', r'All-NaN (slice|axis) encountered')
 warnings.filterwarnings('ignore', r'invalid value encountered in divide')
 TEST = (30, 9)
@@ -134,8 +135,9 @@ def calculate_color(vectors, points, scene):
     # shading
     light_ray = inter.normalize_vector(inter_p[..., na, :] - lights_coord)
     angle = inter.vector_angle(light_ray, triangle_nmls[inter_index])
-    lights_coord_br = np.broadcast_to(lights_coord, inter_p[..., na, :].shape)
-    distance = point_distance(inter_p[..., na, :], lights_coord_br)
+    lights_coord_br = np.broadcast_to(lights_coord, inter_p.shape[:-1] + lights_coord.shape)
+    inter_p_br = np.broadcast_to(inter_p[..., na, :], lights_coord_br.shape)
+    distance = point_distance(inter_p_br, lights_coord_br)
     phong_distance = dist_const_0 + (distance * dist_const_1) + (np.square(distance) * dist_const_2)
     phong_dist_div = 1 / phong_distance
 
@@ -158,7 +160,7 @@ def calculate_color(vectors, points, scene):
     ang_power = np.power(light_ref_ang, tri_spec_spr[inter_index][..., na, :])
 
     tri_spec_br = triangles_specular[inter_index]
-    lights_spec_br = np.broadcast_to(lights_specular, tri_spec_br.shape)
+    lights_spec_br = np.broadcast_to(lights_specular, tri_spec_br.shape[:-2] + lights_specular.shape)
     shade_specular_br = lights_spec_br * tri_spec_br * ang_power * phong_dist_div
     shade_specular = np.nansum(shade_specular_br, axis=-2)
 
