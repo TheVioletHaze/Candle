@@ -12,7 +12,6 @@ from opt_einsum import contract
 warnings.filterwarnings('ignore', r'All-NaN (slice|axis) encountered')
 warnings.filterwarnings('ignore', r'invalid value encountered in divide')
 
-RUNS = 100
 
 def normalize_vector(vectors):
     """Return unit vector
@@ -149,7 +148,7 @@ def intersection_ray_triangle(line_vec, line_pts, triangles, triangle_normals):
     min_value = np.full(line_shape, np.nan)
     min_index = np.full(line_shape, 0, dtype="uint")
 
-    for index in range(0, triangles.shape[0]): #triangles.shape[0]
+    for index in range(0, triangles.shape[0]):
         triangle = triangles[index][na, ...]
         tri_point = triangle[..., 0, :]
         tri_normal = triangle_normals[index][na, ...]
@@ -171,7 +170,69 @@ def intersection_ray_triangle(line_vec, line_pts, triangles, triangle_normals):
         min_index = np.take_along_axis(all_index, all_min_index, -1)
     return (min_value, min_index)
 
+def shadow_hit_light(inter_p, light_ray, triangles, triangle_normals, hit_tri_index):
+    """casts shadow rays to see if any triangles intersect a line from point to light source.
 
+    Parameters
+    ----------
+    inter_p : ndarray
+        ([m], 3)([point], coordinate)
+    light_ray : ndarray
+        ([m], 3)([ray], coordinate)
+    triangles : ndarray
+        (n, 3)(triangle, coordinate)
+    triangle_normals : ndarray
+        (n, 3)(triangle, coordinate)
+    hit_tri_index : ndarray
+        ([m], 1)([point], index of hit triangle)
+
+    Returns
+    -------
+    ndarray
+        ([m], 1)([point], scalar) scaral is nan if no triangle is hit.
+
+    Raises
+    ------
+    ValueError
+        shape of light_ray and inter_p doesn't match
+    """
+    if light_ray.shape != inter_p.shape:
+        raise ValueError(f"shape of light_ray {light_ray.shape} \
+                         and inter_p {inter_p.shape} doesn't match.")
+
+    line_shape = light_ray.shape[:-1] + (1,)
+    min_value = np.full(line_shape, np.nan)
+    min_index = np.full(line_shape, 0, dtype="uint")
+    hit_tri_index_br = np.broadcast_to(hit_tri_index[..., na, :], line_shape)
+
+    for index in range(0, triangles.shape[0]):
+        triangle = triangles[index][na, ...]
+        tri_point = triangle[..., 0, :]
+        tri_normal = triangle_normals[index][na, ...]
+        tri_index = np.full(line_shape, index, dtype="uint")
+
+        tri_inter = intersection_plane_line(tri_point, tri_normal, light_ray, inter_p)
+
+        same_tri_mask = np.where(tri_index == hit_tri_index_br)
+        tri_inter[same_tri_mask] = np.nan #intersections with tri hit by light ray filtered
+        before_mask = np.where(tri_inter < 0)
+        tri_inter[before_mask] = np.nan #inter before ray filtered out
+        after_mask = np.where(tri_inter > 1)
+        tri_inter[after_mask] = np.nan #inter before ray filtered out
+
+        inter_point = (tri_inter * light_ray) + inter_p
+        tri_hit = inside_out_test(triangle, tri_normal, inter_point)
+        tri_value = np.where(tri_hit, tri_inter, np.nan)
+        all_values = np.concatenate([min_value, tri_value], axis=-1)
+        all_index = np.concatenate([min_index, tri_index], axis=-1)
+
+        all_min = np.nanmin(all_values, axis=-1, keepdims=True) #nanargmin throws error when all nan
+        all_min_mask = all_values==all_min
+        all_min_index = np.argmax(all_min_mask, axis=-1, keepdims=True)
+
+        min_value = np.take_along_axis(all_values, all_min_index, -1)
+        min_index = np.take_along_axis(all_index, all_min_index, -1)
+    return min_value
 
 def vector_angle(triangle, ray):
     """returns the angle between two vectors
