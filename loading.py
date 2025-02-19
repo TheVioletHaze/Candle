@@ -10,13 +10,13 @@ warnings.filterwarnings('ignore', r'invalid value encountered in divide')
 
 
 def main():
-    """takes an stl file given as CLI argument, calculates color for every pixel and shows image
+    """takes a resolution and an stl file given as CLI arguments, calculates color for every pixel and shows image
     """
     #Strahlen
     a = np.array([-20, -5, 20])
     b = np.array([-20, -5, -20])
     c = np.array([20, -5, 20])
-    m = 100 # resolution
+    m = int(sys.argv[1]) # resolution
     points = cast.pixel_grid(a, b, m, c, m)
 
     origin = np.array([0, -80, 0])
@@ -29,7 +29,7 @@ def main():
     }
 
     #Dreiecke
-    stl_file = sys.argv[1]
+    stl_file = sys.argv[2]
     object_mesh = mesh.Mesh.from_file(stl_file)
 
     triangles = []
