@@ -9,7 +9,6 @@ import numpy as np
 from numpy import newaxis as na
 from PIL import Image
 import intersection as inter
-import sys
 warnings.filterwarnings('ignore', r'All-NaN (slice|axis) encountered')
 warnings.filterwarnings('ignore', r'invalid value encountered in divide')
 
