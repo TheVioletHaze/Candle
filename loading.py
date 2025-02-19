@@ -16,7 +16,7 @@ def main():
     a = np.array([-20, -5, 20])
     b = np.array([-20, -5, -20])
     c = np.array([20, -5, 20])
-    m = 1000 # resolution
+    m = 100 # resolution
     points = cast.pixel_grid(a, b, m, c, m)
 
     origin = np.array([0, -80, 0])
@@ -56,7 +56,12 @@ def main():
             "specular": 1,
             "diffuse": 1,
             "xyz": [-24.968, -11.2209, 5.66921], 
-        }
+        },
+        {
+            "specular": 1,
+            "diffuse": 1,
+            "xyz": [-24.968, -11.2209, 5.66921],
+        },
     ]
 
     scene = {

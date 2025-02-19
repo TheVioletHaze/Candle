@@ -13,7 +13,6 @@ import sys
 warnings.filterwarnings('ignore', r'All-NaN (slice|axis) encountered')
 warnings.filterwarnings('ignore', r'invalid value encountered in divide')
 
-
 def transform_dict(input_dict):
     """allows shortcuts in a dictionary.
 
@@ -32,14 +31,14 @@ def transform_dict(input_dict):
     for key, value in input_dict.items():
         if key == "material":
             if value == "0":
-                output_dict["ambient"] = 0.3
+                output_dict["ambient"] = 0.2
                 output_dict["diffuse"] = 0.4
                 output_dict["specular"] = 0.3
                 output_dict["specular_spread"] = 2
             elif value == "1":
-                output_dict["ambient"] = 0.3
-                output_dict["diffuse"] = 0.4
-                output_dict["specular"] = 0.3
+                output_dict["ambient"] = 0.15
+                output_dict["diffuse"] = 0.45
+                output_dict["specular"] = 0.4
                 output_dict["specular_spread"] = 2
         else:
             output_dict[key] = value
@@ -118,24 +117,32 @@ def calculate_color(vectors, points, scene):
     triangles_specular = np.array([tri["specular"] for tri in scene["triangles"]])[..., na]
     tri_spec_spr = np.array([tri["specular_spread"] for tri in scene["triangles"]])
 
-    # intersections
-    intersection, inter_index  = \
-        inter.intersection_ray_triangle(vectors, points, triangles_coord, triangle_nmls)
-    inter_p =  points + (intersection * vectors)
-
     # light
     lights_coord = np.array([light["xyz"] for light in scene["lights"]])
     lights_diffuse = np.array([light["diffuse"] for light in scene["lights"]])[..., na]
     lights_specular = np.array([light["specular"] for light in scene["lights"]])[..., na]
 
-    # shading
-    light_ray = inter.normalize_vector(inter_p[..., na, :] - lights_coord)
-    angle = inter.vector_angle(light_ray, triangle_nmls[inter_index])
+    # intersections
+    intersection, inter_index  = \
+        inter.intersection_ray_triangle(vectors, points, triangles_coord, triangle_nmls)
+    inter_p =  points + (intersection * vectors)
     lights_coord_br = np.broadcast_to(lights_coord, inter_p.shape[:-1] + lights_coord.shape)
     inter_p_br = np.broadcast_to(inter_p[..., na, :], lights_coord_br.shape)
+
+
+    # shadow
+    light_ray =  lights_coord - inter_p[..., na, :]
+    prior_hits = \
+        inter.shadow_hit_light(inter_p_br, light_ray, triangles_coord, triangle_nmls, inter_index)
+    shadow_mask = np.where(~np.isnan(prior_hits))
+    light_ray[shadow_mask] = np.nan
+    # shading
+    light_ray_norm = inter.normalize_vector(light_ray)
+    angle = inter.vector_angle(light_ray_norm, triangle_nmls[inter_index])
     distance = point_distance(inter_p_br, lights_coord_br)
     phong_distance = dist_const_0 + (distance * dist_const_1) + (np.square(distance) * dist_const_2)
     phong_dist_div = 1 / phong_distance
+
     # ambient
     shade_ambient =  sc_ambient * triangles_ambient
 
@@ -146,15 +153,16 @@ def calculate_color(vectors, points, scene):
 
     # specular
     light_nml_prj = triangle_nmls[inter_index] * \
-         np.einsum("...j, ...j -> ...", triangle_nmls[inter_index], light_ray)[..., na]
-    light_ref = 2 * light_nml_prj - light_ray
+         np.einsum("...j, ...j -> ...", triangle_nmls[inter_index], light_ray_norm)[..., na]
+    light_ref = 2 * light_nml_prj - light_ray_norm
 
     ray_inter_orig = inter.normalize_vector(inter_p - origin)
     light_ref_ang = inter.vector_angle(light_ref, ray_inter_orig[..., na, :])
     ang_power = np.power(light_ref_ang, tri_spec_spr[inter_index][..., na, :])
 
     tri_spec_br = triangles_specular[inter_index]
-    lights_spec_br = np.broadcast_to(lights_specular, tri_spec_br.shape[:-2] + lights_specular.shape)
+    lights_spec_br = np.broadcast_to(lights_specular, \
+                                     tri_spec_br.shape[:-2] + lights_specular.shape)
     shade_specular_br = lights_spec_br * tri_spec_br * ang_power * phong_dist_div
     shade_specular = np.nansum(shade_specular_br, axis=-2)
 
