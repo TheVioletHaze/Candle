@@ -68,7 +68,6 @@ def main():
         "general": general,
         "triangles": triangles,
         "lights": lights,
-        "origin": origin,
         "points": points
     }
 
