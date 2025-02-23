@@ -35,8 +35,8 @@ def transform_dict(input_dict):
                 output_dict["specular"] = 0.3
                 output_dict["specular_spread"] = 2
             elif value == "1":
-                output_dict["ambient"] = 0.15
-                output_dict["diffuse"] = 0.45
+                output_dict["ambient"] = 0.2
+                output_dict["diffuse"] = 0.4
                 output_dict["specular"] = 0.4
                 output_dict["specular_spread"] = 2
         else:
