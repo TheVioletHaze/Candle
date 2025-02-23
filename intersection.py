@@ -7,6 +7,7 @@ Provides functions for
 import warnings
 import numpy as np
 from numpy import newaxis as na
+from alive_progress import alive_bar
 from opt_einsum import contract
 
 warnings.filterwarnings('ignore', r'All-NaN (slice|axis) encountered')
@@ -148,26 +149,28 @@ def intersection_ray_triangle(line_vec, line_pts, triangles, triangle_normals):
     min_value = np.full(line_shape, np.nan)
     min_index = np.full(line_shape, 0, dtype="uint")
 
-    for index in range(0, triangles.shape[0]):
-        triangle = triangles[index][na, ...]
-        tri_point = triangle[..., 0, :]
-        tri_normal = triangle_normals[index][na, ...]
-        tri_index = np.full(line_shape, index, dtype="uint")
+    with alive_bar(len(range(0, triangles.shape[0]))) as progress:
+        for index in range(0, triangles.shape[0]):
+            triangle = triangles[index][na, ...]
+            tri_point = triangle[..., 0, :]
+            tri_normal = triangle_normals[index][na, ...]
+            tri_index = np.full(line_shape, index, dtype="uint")
 
-        tri_inter = intersection_plane_line(tri_point, tri_normal, line_vec, line_pts)
-        inter_point = (tri_inter * line_vec) + line_pts
-        tri_hit = inside_out_test(triangle, tri_normal, inter_point)
-        tri_value = np.where(tri_hit, tri_inter, np.nan)
+            tri_inter = intersection_plane_line(tri_point, tri_normal, line_vec, line_pts)
+            inter_point = (tri_inter * line_vec) + line_pts
+            tri_hit = inside_out_test(triangle, tri_normal, inter_point)
+            tri_value = np.where(tri_hit, tri_inter, np.nan)
 
-        all_values = np.concatenate([min_value, tri_value], axis=-1)
-        all_index = np.concatenate([min_index, tri_index], axis=-1)
+            all_values = np.concatenate([min_value, tri_value], axis=-1)
+            all_index = np.concatenate([min_index, tri_index], axis=-1)
 
-        all_min = np.nanmin(all_values, axis=-1, keepdims=True) #nanargmin throws error when all nan
-        all_min_mask = all_values==all_min
-        all_min_index = np.argmax(all_min_mask, axis=-1, keepdims=True)
+            all_min = np.nanmin(all_values, axis=-1, keepdims=True) #error when all nan
+            all_min_mask = all_values==all_min
+            all_min_index = np.argmax(all_min_mask, axis=-1, keepdims=True)
 
-        min_value = np.take_along_axis(all_values, all_min_index, -1)
-        min_index = np.take_along_axis(all_index, all_min_index, -1)
+            min_value = np.take_along_axis(all_values, all_min_index, -1)
+            min_index = np.take_along_axis(all_index, all_min_index, -1)
+            progress()
     return (min_value, min_index)
 
 def shadow_hit_light(inter_p, light_ray, triangles, triangle_normals, hit_tri_index):
@@ -205,33 +208,35 @@ def shadow_hit_light(inter_p, light_ray, triangles, triangle_normals, hit_tri_in
     min_index = np.full(line_shape, 0, dtype="uint")
     hit_tri_index_br = np.broadcast_to(hit_tri_index[..., na, :], line_shape)
 
-    for index in range(0, triangles.shape[0]):
-        triangle = triangles[index][na, ...]
-        tri_point = triangle[..., 0, :]
-        tri_normal = triangle_normals[index][na, ...]
-        tri_index = np.full(line_shape, index, dtype="uint")
+    with alive_bar(len(range(0, triangles.shape[0]))) as progress:
+        for index in range(0, triangles.shape[0]):
+            triangle = triangles[index][na, ...]
+            tri_point = triangle[..., 0, :]
+            tri_normal = triangle_normals[index][na, ...]
+            tri_index = np.full(line_shape, index, dtype="uint")
 
-        tri_inter = intersection_plane_line(tri_point, tri_normal, light_ray, inter_p)
+            tri_inter = intersection_plane_line(tri_point, tri_normal, light_ray, inter_p)
 
-        same_tri_mask = np.where(tri_index == hit_tri_index_br)
-        tri_inter[same_tri_mask] = np.nan #intersections with tri hit by light ray filtered
-        before_mask = np.where(tri_inter < 0)
-        tri_inter[before_mask] = np.nan #inter before ray filtered out
-        after_mask = np.where(tri_inter > 1)
-        tri_inter[after_mask] = np.nan #inter before ray filtered out
+            same_tri_mask = np.where(tri_index == hit_tri_index_br)
+            tri_inter[same_tri_mask] = np.nan #intersections with tri hit by light ray filtered
+            before_mask = np.where(tri_inter < 0)
+            tri_inter[before_mask] = np.nan #inter before ray filtered out
+            after_mask = np.where(tri_inter > 1)
+            tri_inter[after_mask] = np.nan #inter before ray filtered out
 
-        inter_point = (tri_inter * light_ray) + inter_p
-        tri_hit = inside_out_test(triangle, tri_normal, inter_point)
-        tri_value = np.where(tri_hit, tri_inter, np.nan)
-        all_values = np.concatenate([min_value, tri_value], axis=-1)
-        all_index = np.concatenate([min_index, tri_index], axis=-1)
+            inter_point = (tri_inter * light_ray) + inter_p
+            tri_hit = inside_out_test(triangle, tri_normal, inter_point)
+            tri_value = np.where(tri_hit, tri_inter, np.nan)
+            all_values = np.concatenate([min_value, tri_value], axis=-1)
+            all_index = np.concatenate([min_index, tri_index], axis=-1)
 
-        all_min = np.nanmin(all_values, axis=-1, keepdims=True) #nanargmin throws error when all nan
-        all_min_mask = all_values==all_min
-        all_min_index = np.argmax(all_min_mask, axis=-1, keepdims=True)
+            all_min = np.nanmin(all_values, axis=-1, keepdims=True) #error when all nan
+            all_min_mask = all_values==all_min
+            all_min_index = np.argmax(all_min_mask, axis=-1, keepdims=True)
 
-        min_value = np.take_along_axis(all_values, all_min_index, -1)
-        min_index = np.take_along_axis(all_index, all_min_index, -1)
+            min_value = np.take_along_axis(all_values, all_min_index, -1)
+            min_index = np.take_along_axis(all_index, all_min_index, -1)
+            progress()
     return min_value
 
 def vector_angle(triangle, ray):
