@@ -10,7 +10,8 @@ warnings.filterwarnings('ignore', r'invalid value encountered in divide')
 
 
 def main():
-    """takes a resolution and an stl file given as CLI arguments, calculates color for every pixel and shows image
+    """takes a resolution and an stl file given as CLI arguments, 
+    calculates color for every pixel and shows image
     """
     #Strahlen
     a = np.array([-20, -5, 20])
@@ -31,7 +32,6 @@ def main():
     #Dreiecke
     stl_file = sys.argv[2]
     object_mesh = mesh.Mesh.from_file(stl_file)
-
     triangles = []
     nan_arr =[np.nan, np.nan, np.nan]
     nan_triangle = { # necessary for index
@@ -67,10 +67,12 @@ def main():
     scene = {
         "general": general,
         "triangles": triangles,
-        "lights": lights
+        "lights": lights,
+        "origin": origin,
+        "points": points
     }
 
-    image = cast.render_image(origin, points, scene)
+    image = cast.render_image(scene)
     image.save("temp.png")
     image.show()
 

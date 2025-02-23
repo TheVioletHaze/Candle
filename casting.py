@@ -80,7 +80,7 @@ def point_distance(point_1, point_2):
     return np.linalg.norm(vector, axis=-1, keepdims=True)
 
 
-def calculate_color(vectors, points, scene):
+def calculate_color(vectors, scene):
     """Returns the color that arrives at every point
 
     Parameters
@@ -123,8 +123,8 @@ def calculate_color(vectors, points, scene):
 
     # intersections
     intersection, inter_index  = \
-        inter.intersection_ray_triangle(vectors, points, triangles_coord, triangle_nmls)
-    inter_p =  points + (intersection * vectors)
+        inter.intersection_ray_triangle(vectors, scene["points"], triangles_coord, triangle_nmls)
+    inter_p =  scene["points"] + (intersection * vectors)
     lights_coord_br = np.broadcast_to(lights_coord, inter_p.shape[:-1] + lights_coord.shape)
     inter_p_br = np.broadcast_to(inter_p[..., na, :], lights_coord_br.shape)
 
@@ -212,7 +212,7 @@ def pixel_grid(point_a, point_b, res_b, point_c, res_c):
     return np.array(array)
 
 
-def render_image(pov, points, scene):
+def render_image(scene):
     """renders a pillow image for 3d scene
 
     Parameters
@@ -229,7 +229,7 @@ def render_image(pov, points, scene):
     pillow image
         pillow image render of scene
     """
-    vectors = inter.normalize_vector(vector_from_points(pov, points))
-    rgb_image = calculate_color(vectors, points, scene)
+    vectors = inter.normalize_vector(vector_from_points(scene["origin"], scene["points"]))
+    rgb_image = calculate_color(vectors, scene)
     image = Image.fromarray(rgb_image)
     return image
