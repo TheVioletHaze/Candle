@@ -37,7 +37,7 @@ def main():
     nan_triangle = { # necessary for index
         "normal": np.array(nan_arr),
         "xyz": np.array([nan_arr, nan_arr, nan_arr]),
-        "color": np.array(nan_arr),
+        "color": np.array([255, 255, 0]),
         "material": "0"
     }
     triangles.append(nan_triangle)
@@ -45,7 +45,7 @@ def main():
         triangle_dict = {
             "normal": triangle[0],
             "xyz": triangle[1],
-            "color": [255, 255, 255],
+            "color": [255, 0, 255],
             "material": "1"
         }
         triangles.append(triangle_dict)

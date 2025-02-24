@@ -97,80 +97,19 @@ def calculate_color(vectors, scene):
     ndarray
         ([m], 3)(point, color)
     """
-    # scene
-    sc_ambient = scene["general"]["ambient"]
-    origin = scene["general"]["origin"]
-
-    dist_const_0 = scene["general"]["distance_constants"][0]
-    dist_const_1 = scene["general"]["distance_constants"][1]
-    dist_const_2 = scene["general"]["distance_constants"][2]
-
     # triangle
     triangles_coord = np.array([tri["xyz"] for tri in scene["triangles"]])
     triangle_nmls = inter.normalize_vector(np.array([tri["normal"] for tri in scene["triangles"]]))
 
     triangles_color = np.array([tri["color"] for tri in scene["triangles"]])
 
-    triangles_ambient = np.array([tri["ambient"] for tri in scene["triangles"]])
-    triangles_diffuse = np.array([tri["diffuse"] for tri in scene["triangles"]])
-    triangles_specular = np.array([tri["specular"] for tri in scene["triangles"]])[..., na]
-    tri_spec_spr = np.array([tri["specular_spread"] for tri in scene["triangles"]])
-
-    # light
-    lights_coord = np.array([light["xyz"] for light in scene["lights"]])
-    lights_diffuse = np.array([light["diffuse"] for light in scene["lights"]])[..., na]
-    lights_specular = np.array([light["specular"] for light in scene["lights"]])[..., na]
-
     # intersections
     intersection, inter_index  = \
         inter.intersection_ray_triangle(vectors, scene["points"], triangles_coord, triangle_nmls)
-    inter_p =  scene["points"] + (intersection * vectors)
-    lights_coord_br = np.broadcast_to(lights_coord, inter_p.shape[:-1] + lights_coord.shape)
-    inter_p_br = np.broadcast_to(inter_p[..., na, :], lights_coord_br.shape)
 
-
-    # shadow
-    light_ray =  lights_coord - inter_p[..., na, :]
-    prior_hits = \
-        inter.shadow_hit_light(inter_p_br, light_ray, triangles_coord, triangle_nmls, inter_index)
-    shadow_mask = np.where(~np.isnan(prior_hits))
-    light_ray[shadow_mask] = np.nan
-    # shading
-    light_ray_norm = inter.normalize_vector(light_ray)
-    angle = inter.vector_angle(light_ray_norm, triangle_nmls[inter_index])
-    distance = point_distance(inter_p_br, lights_coord_br)
-    phong_distance = dist_const_0 + (distance * dist_const_1) + (np.square(distance) * dist_const_2)
-    phong_dist_div = 1 / phong_distance
-
-    # ambient
-    shade_ambient =  sc_ambient * triangles_ambient
-
-    # diffuse
-    shade_diffuse_br = \
-        lights_diffuse * triangles_diffuse[inter_index][..., na] * angle * phong_dist_div
-    shade_diffuse = np.nansum(shade_diffuse_br, axis=-2)
-
-    # specular
-    light_nml_prj = triangle_nmls[inter_index] * \
-         np.einsum("...j, ...j -> ...", triangle_nmls[inter_index], light_ray_norm)[..., na]
-    light_ref = 2 * light_nml_prj - light_ray_norm
-
-    ray_inter_orig = inter.normalize_vector(inter_p - origin)
-    light_ref_ang = inter.vector_angle(light_ref, ray_inter_orig[..., na, :])
-    ang_power = np.power(light_ref_ang, tri_spec_spr[inter_index][..., na, :])
-
-    tri_spec_br = triangles_specular[inter_index]
-    lights_spec_br = np.broadcast_to(lights_specular, \
-                                     tri_spec_br.shape[:-2] + lights_specular.shape)
-    shade_specular_br = lights_spec_br * tri_spec_br * ang_power * phong_dist_div
-    shade_specular = np.nansum(shade_specular_br, axis=-2)
-
-    # combine
-    shade_combine = shade_ambient[inter_index] + shade_specular + shade_diffuse
-    color_shaded = triangles_color[inter_index] * shade_combine[..., na]
-    not_nan_mask = ~np.isnan(intersection)[..., na]
-    color_mskd = np.where(not_nan_mask, color_shaded, np.nan)
-    color_sum = np.nanmin(color_mskd, axis=-2)
+    # color    
+    color_shaded = triangles_color[inter_index]
+    color_sum = np.nanmin(color_shaded, axis=-2)
     color_abs = np.abs(color_sum)
     color_squeeze= np.squeeze(color_abs)
 
