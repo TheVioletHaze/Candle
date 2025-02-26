@@ -230,7 +230,8 @@ def render_image(scene):
     pillow image
         pillow image render of scene
     """
-    vectors = inter.normalize_vector(vector_from_points(scene["general"]["origin"], scene["points"]))
+    origin = scene["general"]["origin"]
+    vectors = inter.normalize_vector(vector_from_points(origin, scene["points"]))
     rgb_image = calculate_color(vectors, scene)
     image = Image.fromarray(rgb_image)
     return image

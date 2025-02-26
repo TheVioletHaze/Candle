@@ -19,7 +19,6 @@ def main():
     c = np.array([20, -5, 20])
     m = int(sys.argv[1]) # resolution
     points = cast.pixel_grid(a, b, m, c, m)
-
     origin = np.array([0, -80, 0])
 
     #Szene
