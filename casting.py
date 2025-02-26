@@ -45,7 +45,7 @@ def transform_dict(input_dict):
 
 
 def vector_from_points(point_1, point_2):
-    """Returns a Vector from point a to b
+    """Returns a Vector from point 1 to point 2
 
     Parameters
     ----------
@@ -100,6 +100,7 @@ def calculate_color(vectors, scene):
     # scene
     sc_ambient = scene["general"]["ambient"]
     origin = scene["general"]["origin"]
+    origin_br = np.broadcast_to(origin, scene["points"].shape)
 
     dist_const_0 = scene["general"]["distance_constants"][0]
     dist_const_1 = scene["general"]["distance_constants"][1]
@@ -123,8 +124,8 @@ def calculate_color(vectors, scene):
 
     # intersections
     intersection, inter_index  = \
-        inter.intersection_ray_triangle(vectors, scene["points"], triangles_coord, triangle_nmls)
-    inter_p =  scene["points"] + (intersection * vectors)
+        inter.intersection_ray_triangle(vectors, origin_br, triangles_coord, triangle_nmls)
+    inter_p =  origin_br + (intersection * vectors)
     lights_coord_br = np.broadcast_to(lights_coord, inter_p.shape[:-1] + lights_coord.shape)
     inter_p_br = np.broadcast_to(inter_p[..., na, :], lights_coord_br.shape)
 
