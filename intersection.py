@@ -168,7 +168,7 @@ def intersection_ray_triangle(line_vec, line_pts, triangles, triangle_normals):
                 value_min = np.nanmin(values) # argmin error when all nan
                 min_mask = values==value_min
                 hit_index = np.argmax(min_mask)
-                min_index[i, j] = hit_index
+                min_index[i, j] = filtered_index[hit_index]
                 min_value[i, j] = value_min
                 pixel()
     return (min_value, min_index)
