@@ -116,7 +116,6 @@ def inside_out_test(triangles, normals, points):
     side_inter_bool_merged = np.all(side_inter_bool, axis=-2)
     return side_inter_bool_merged
 
-
 def intersection_ray_triangle(line_vec, line_pts, triangles, triangle_normals):
     """Returns scalars for intersections and what triangle is intersected
 
@@ -148,29 +147,30 @@ def intersection_ray_triangle(line_vec, line_pts, triangles, triangle_normals):
     line_shape = vec_shape[:-1] + (1,)
     min_value = np.full(line_shape, np.nan)
     min_index = np.full(line_shape, 0, dtype="uint")
+    triangle_indices = np.indices(triangles.shape[:-2]).transpose(1, 0)[..., 0]
 
-    with alive_bar(len(range(0, triangles.shape[0]))) as progress:
-        for index in range(0, triangles.shape[0]):
-            triangle = triangles[index][na, ...]
-            tri_point = triangle[..., 0, :]
-            tri_normal = triangle_normals[index][na, ...]
-            tri_index = np.full(line_shape, index, dtype="uint")
+    with alive_bar(vec_shape[0] * vec_shape[1]) as pixel:
+        for i in range(0, vec_shape[0]):
+            for j in range(0, vec_shape[1]):
+                vector = line_vec[i, j]
+                point = line_pts[i, j]
 
-            tri_inter = intersection_plane_line(tri_point, tri_normal, line_vec, line_pts)
-            inter_point = (tri_inter * line_vec) + line_pts
-            tri_hit = inside_out_test(triangle, tri_normal, inter_point)
-            tri_value = np.where(tri_hit, tri_inter, np.nan)
+                filtered_index = triangle_indices
+                filtered_triangles = triangles[filtered_index]
+                tri_normal = triangle_normals[filtered_index]
+                tri_point = filtered_triangles[..., 0, :]
 
-            all_values = np.concatenate([min_value, tri_value], axis=-1)
-            all_index = np.concatenate([min_index, tri_index], axis=-1)
+                tri_inter = intersection_plane_line(tri_point, tri_normal, vector, point)[..., na]
+                inter_point = (tri_inter * vector) + point
+                tri_hit = inside_out_test(filtered_triangles, tri_normal, inter_point)
+                values = np.where(tri_hit, tri_inter, np.nan)
 
-            all_min = np.nanmin(all_values, axis=-1, keepdims=True) #error when all nan
-            all_min_mask = all_values==all_min
-            all_min_index = np.argmax(all_min_mask, axis=-1, keepdims=True)
-
-            min_value = np.take_along_axis(all_values, all_min_index, -1)
-            min_index = np.take_along_axis(all_index, all_min_index, -1)
-            progress()
+                value_min = np.nanmin(values) # argmin error when all nan
+                min_mask = values==value_min
+                hit_index = np.argmax(min_mask)
+                min_index[i, j] = hit_index
+                min_value[i, j] = value_min
+                pixel()
     return (min_value, min_index)
 
 def shadow_hit_light(inter_p, light_ray, triangles, triangle_normals, hit_tri_index):
