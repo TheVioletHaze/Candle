@@ -32,14 +32,6 @@ def main():
     stl_file = sys.argv[2]
     object_mesh = mesh.Mesh.from_file(stl_file)
     triangles = []
-    nan_arr =[np.nan, np.nan, np.nan]
-    nan_triangle = { # necessary for index
-        "normal": np.array(nan_arr),
-        "xyz": np.array([nan_arr, nan_arr, nan_arr]),
-        "color": np.array(nan_arr),
-        "material": "0"
-    }
-    triangles.append(nan_triangle)
     for triangle in object_mesh.data:
         triangle_dict = {
             "normal": triangle[0],
