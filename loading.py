@@ -40,6 +40,18 @@ def main():
             "material": "1"
         }
         triangles.append(triangle_dict)
+
+    # Objekt 2
+    stl_file = sys.argv[3]
+    object_mesh = mesh.Mesh.from_file(stl_file)
+    for triangle in object_mesh.data:
+        triangle_dict = {
+            "normal": triangle[0],
+            "xyz": triangle[1],
+            "color": [255, 255, 255],
+            "material": "2"
+        }
+        triangles.append(triangle_dict)    
     triangles = [cast.transform_dict(tri) for tri in triangles]
 
     lights = [
