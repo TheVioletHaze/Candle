@@ -8,6 +8,41 @@ import casting as cast
 warnings.filterwarnings('ignore', r'All-NaN (slice|axis) encountered')
 warnings.filterwarnings('ignore', r'invalid value encountered in divide')
 
+def transform_dict(input_dict):
+    """allows shortcuts in a dictionary.
+
+    Parameters
+    ----------
+    input_dict : dictionary
+        dictionary with shortcuts
+
+    Returns
+    -------
+    dictionary
+        dictionary where shortcuts are expanded
+    """
+    output_dict = {}
+
+    for key, value in input_dict.items():
+        if key == "material":
+            if value == "0":
+                output_dict["ambient"] = 0.2
+                output_dict["diffuse"] = 0.4
+                output_dict["specular"] = 0.3
+                output_dict["specular_spread"] = 2
+            elif value == "1":
+                output_dict["ambient"] = 0.2
+                output_dict["diffuse"] = 0.4
+                output_dict["specular"] = 0.4
+                output_dict["specular_spread"] = 2
+            elif value == "2":
+                output_dict["ambient"] = 0.5
+                output_dict["diffuse"] = 0.4
+                output_dict["specular"] = 0.4
+                output_dict["specular_spread"] = 2
+        else:
+            output_dict[key] = value
+    return output_dict
 
 def main():
     """takes a resolution and an stl file given as CLI arguments, 
@@ -52,7 +87,7 @@ def main():
             "material": "2"
         }
         triangles.append(triangle_dict)    
-    triangles = [cast.transform_dict(tri) for tri in triangles]
+    triangles = [transform_dict(tri) for tri in triangles]
 
     lights = [
         {
