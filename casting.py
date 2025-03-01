@@ -39,6 +39,11 @@ def transform_dict(input_dict):
                 output_dict["diffuse"] = 0.4
                 output_dict["specular"] = 0.4
                 output_dict["specular_spread"] = 2
+            elif value == "2":
+                output_dict["ambient"] = 0.5
+                output_dict["diffuse"] = 0.4
+                output_dict["specular"] = 0.4
+                output_dict["specular_spread"] = 2
         else:
             output_dict[key] = value
     return output_dict
