@@ -68,6 +68,7 @@ def calculate_color(vectors, scene):
     """
     # scene
     sc_ambient = scene["general"]["ambient"]
+    sc_color_ambient = scene["general"]["color_ambient"] / 255
     origin = scene["general"]["origin"]
     origin_br = np.broadcast_to(origin, scene["points"].shape)
 
@@ -79,7 +80,9 @@ def calculate_color(vectors, scene):
     triangles_coord = np.array([tri["xyz"] for tri in scene["triangles"]])
     triangle_nmls = inter.normalize_vector(np.array([tri["normal"] for tri in scene["triangles"]]))
 
-    triangles_color = np.array([tri["color"] for tri in scene["triangles"]])
+    triangles_color_amb = np.array([tri["color_ambient"] for tri in scene["triangles"]]) / 255
+    triangles_color_diff = np.array([tri["color_diffuse"] for tri in scene["triangles"]]) / 255
+    triangles_color_spec = np.array([tri["color_specular"] for tri in scene["triangles"]]) / 255
 
     triangles_ambient = np.array([tri["ambient"] for tri in scene["triangles"]])
     triangles_diffuse = np.array([tri["diffuse"] for tri in scene["triangles"]])
@@ -91,8 +94,11 @@ def calculate_color(vectors, scene):
     lights_diffuse = np.array([light["diffuse"] for light in scene["lights"]])[..., na]
     lights_specular = np.array([light["specular"] for light in scene["lights"]])[..., na]
 
+    lights_color_diff = np.array([light["color_diffuse"] for light in scene["lights"]]) / 255
+    lights_color_spec = np.array([light["color_specular"] for light in scene["lights"]]) / 255
+
     # intersections
-    
+
     #intersection, inter_index  = \
     #     inter.intersection_ray_triangle(vectors, origin_br, triangles_coord, triangle_nmls)
     # np.save("./np/intersection.npy", intersection)
@@ -123,14 +129,19 @@ def calculate_color(vectors, scene):
     distance = point_distance(inter_p_br, lights_coord_br)
     phong_distance = dist_const_0 + (distance * dist_const_1) + (np.square(distance) * dist_const_2)
     phong_dist_div = 1 / phong_distance
+    white = np.array([255, 255, 255])
 
     # ambient
     shade_ambient =  sc_ambient * triangles_ambient
+    ambient_color = white * triangles_color_amb[inter_index] \
+        * sc_color_ambient * shade_ambient[inter_index][..., na]
 
     # diffuse
     shade_diffuse_br = \
         lights_diffuse * triangles_diffuse[inter_index][..., na] * angle * phong_dist_div
-    shade_diffuse = np.nansum(shade_diffuse_br, axis=-2)
+    shade_diff_light_col = shade_diffuse_br * lights_color_diff
+    shade_diffuse = np.nansum(shade_diff_light_col, axis=-2)
+    diffuse_color = white * triangles_color_diff[inter_index] * shade_diffuse[..., na, :]
 
     # specular
     light_nml_prj = triangle_nmls[inter_index] * \
@@ -145,13 +156,14 @@ def calculate_color(vectors, scene):
     lights_spec_br = np.broadcast_to(lights_specular, \
                                      tri_spec_br.shape[:-2] + lights_specular.shape)
     shade_specular_br = lights_spec_br * tri_spec_br * ang_power * phong_dist_div
-    shade_specular = np.nansum(shade_specular_br, axis=-2)
+    shade_spec_light_col = shade_specular_br * lights_color_spec
+    shade_specular = np.nansum(shade_spec_light_col, axis=-2)
+    specular_color = white * triangles_color_spec[inter_index] * shade_specular[..., na, :]
 
     # combine
-    shade_combine = shade_ambient[inter_index] + shade_specular + shade_diffuse
-    color_shaded = triangles_color[inter_index] * shade_combine[..., na]
+    color_combine = ambient_color + diffuse_color + specular_color
     not_nan_mask = ~np.isnan(intersection)[..., na]
-    color_mskd = np.where(not_nan_mask, color_shaded, np.nan)
+    color_mskd = np.where(not_nan_mask, color_combine, 0)
     color_sum = np.nanmin(color_mskd, axis=-2)
     color_abs = np.abs(color_sum)
     color_squeeze= np.squeeze(color_abs)
