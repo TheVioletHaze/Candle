@@ -3,3 +3,4 @@ frames
 temp
 out.mp4
 *.png
+*.npy

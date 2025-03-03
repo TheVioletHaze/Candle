@@ -92,8 +92,15 @@ def calculate_color(vectors, scene):
     lights_specular = np.array([light["specular"] for light in scene["lights"]])[..., na]
 
     # intersections
-    intersection, inter_index  = \
-        inter.intersection_ray_triangle(vectors, origin_br, triangles_coord, triangle_nmls)
+    
+    #intersection, inter_index  = \
+    #     inter.intersection_ray_triangle(vectors, origin_br, triangles_coord, triangle_nmls)
+    # np.save("./np/intersection.npy", intersection)
+    # np.save("./np/inter_index.npy", inter_index)
+
+    intersection = np.load("./np/intersection.npy")
+    inter_index = np.load("./np/inter_index.npy")
+
     inter_p =  origin_br + (intersection * vectors)
     lights_coord_br = np.broadcast_to(lights_coord, inter_p.shape[:-1] + lights_coord.shape)
     inter_p_br = np.broadcast_to(inter_p[..., na, :], lights_coord_br.shape)
@@ -101,8 +108,13 @@ def calculate_color(vectors, scene):
 
     # shadow
     light_ray =  lights_coord - inter_p[..., na, :]
-    prior_hits = \
-        inter.shadow_hit_light(inter_p_br, light_ray, triangles_coord, triangle_nmls, inter_index)
+
+    # prior_hits = \
+    #     inter.shadow_hit_light(inter_p_br, light_ray, triangles_coord, triangle_nmls, inter_index)
+    # np.save("./np/prior_hits.npy", prior_hits)
+
+    prior_hits = np.load("./np/prior_hits.npy")
+
     shadow_mask = np.where(~np.isnan(prior_hits))
     light_ray[shadow_mask] = np.nan
     # shading
