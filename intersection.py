@@ -257,5 +257,4 @@ def vector_angle(triangle, ray):
     triangle_nrm = normalize_vector(triangle)
     ray_nrm = normalize_vector(ray)
     angle = np.einsum("...m, ...m -> ...", triangle_nrm, ray_nrm)[..., na]
-    absolute = np.abs(angle)
-    return absolute
+    return angle
