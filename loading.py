@@ -34,7 +34,7 @@ def transform_dict(input_dict):
                 output_dict["ambient"] = 0.2
                 output_dict["diffuse"] = 0.4
                 output_dict["specular"] = 0.4
-                output_dict["specular_spread"] = 2
+                output_dict["specular_spread"] = 3
             elif value == "2":
                 output_dict["ambient"] = 0.5
                 output_dict["diffuse"] = 0.4
@@ -61,6 +61,7 @@ def main():
         "ambient": 1,
         "origin": origin,
         "distance_constants": (1, 0.02, 0.01),
+        "color_ambient": np.array([255, 255, 255]), 
     }
 
     #Dreiecke
@@ -71,7 +72,9 @@ def main():
         triangle_dict = {
             "normal": triangle[0],
             "xyz": triangle[1],
-            "color": [255, 255, 255],
+            "color_ambient": np.array([196, 88, 36]),
+            "color_diffuse": np.array([196, 88, 36]),
+            "color_specular": np.array([255, 255, 255]), #often white
             "material": "1"
         }
         triangles.append(triangle_dict)
@@ -79,14 +82,18 @@ def main():
 
     lights = [
         {
-            "specular": 1,
-            "diffuse": 1,
+            "specular": 2,
+            "diffuse": 2,
+            "color_diffuse": np.array([255, 255, 255]),
+            "color_specular": np.array([255, 255, 255]),
             "xyz": [-13.493, -33.255, 6.1512], 
         },
         # {
-        #     "specular": 1,
+        #     "specular": 3,
         #     "diffuse": 1,
-        #     "xyz": [-24.968, -11.2209, 5.66921],
+        #     "color_diffuse": np.array([255, 255, 255]),
+        #     "color_specular": np.array([255, 255, 255]),
+        #     "xyz": [-13.493, -33.255, 6.1512], 
         # },
     ]
 
