@@ -56,20 +56,18 @@ def intersection_plane_line(triangle_pl_pts, triangle_pl_nml, line_vec, line_pts
     Parameters
     ----------
     triangle_pl_pts : ndarray
-        (n, 3)(triangle, any point)
+        (k, 3)(triangle, any point in plane)
     triangle_pl_nml : ndarray
-        (n, 3)(triangle, vector)
+        (k, 3)(triangle, vector)
     line_vec : ndarray
-        ([m], 3)([line], vector)
-        ([m], 3)([line], vector)
+        (m, 3)(line, vector)
     line_pts : ndarray
-        ([m], 3)([line], point) 
-        ([m], 3)([line], point) 
+        (m, 3)(line, point) 
 
     Returns
     -------
     ndarray
-        ([m], n, 1)([line], triangle, scalar)
+        (m, k, 1)(line, triangle, scalar)
     """
     po_qo = line_pts[..., na, :] - triangle_pl_pts[na, :, :] # (Strahl, Ebene, Punkt)
     n_po_qo = np.einsum("...jk, jk->...j", po_qo, triangle_pl_nml, optimize='optimal') * -1
@@ -85,17 +83,16 @@ def inside_out_test(triangles, normals, points):
     Parameters
     ----------
     triangles : ndarray
-        (m, 3, 3)(triangle, vertex, coordinate)
+        (k, 3, 3)(triangle, vertex, coordinate)
     normals : ndarray
-        (m, 3)(triangle, vector)
+        (k, 3)(triangle, vector)
     points : ndarray
-        ([m], n, 3)([line], triangle, coordinate)
-        ([m], n, 3)([line], triangle, coordinate)
+        (m, 3)(line, coordinate)
 
     Returns
     -------
     ndarray
-        ([m], n, 1)([line], triangle, boolean)
+        (m, k, 1)(line, triangle, boolean)
     """
 
     offset1 = np.roll(triangles, -1, axis=-2) # [b, c, a]
@@ -121,28 +118,19 @@ def intersection_ray_triangle(line_vec, line_pts, triangles, triangle_normals):
     Parameters
     ----------
     line_vec : ndarray
-        ([m], 3)([line], coordinate)
+        (m, n, 3)([line], coordinate)
     line_pts : ndarray
-        ([m], 3)([line], coordinate)
+        (m, n, 3)([line], coordinate) must match line_vec
     triangles : ndarray
-        (n, 3, 3)(triangle, vertex, coordinate)
+        (k, 3, 3)(triangle, vertex, coordinate)
     triangle_normals : ndarray
-        (n, 3)(triangle, coordinate) must match triangles
+        (k, 3)(triangle, coordinate) must match triangles
 
     Returns
     -------
-    tuple(scalar of first intersection([m], n, 1), intersected triangle)
-
-    Raises
-    ------
-    ValueError
-        shapes of the triangles don't match
+    tuple(scalar of first intersection(m, n, 1), intersected triangle)
     """
     vec_shape = line_vec.shape
-    pts_shape = line_pts.shape
-    if vec_shape != pts_shape:
-        raise ValueError(f"shape of line_vec {vec_shape} and line_pts {pts_shape} doesn't match.")
-
     line_shape = vec_shape[:-1] + (1,)
     min_value = np.full(line_shape, np.nan)
     min_index = np.full(line_shape, 0, dtype="uint")
@@ -154,7 +142,7 @@ def intersection_ray_triangle(line_vec, line_pts, triangles, triangle_normals):
                 vector = line_vec[i, j]
                 point = line_pts[i, j]
 
-                filtered_index = triangle_indices
+                filtered_index = triangle_indices # filter with backface culling etc
                 filtered_triangles = triangles[filtered_index]
                 tri_normal = triangle_normals[filtered_index]
                 tri_point = filtered_triangles[..., 0, :]
@@ -164,7 +152,7 @@ def intersection_ray_triangle(line_vec, line_pts, triangles, triangle_normals):
                 tri_hit = inside_out_test(filtered_triangles, tri_normal, inter_point)
                 values = np.where(tri_hit, tri_inter, np.nan)
 
-                value_min = np.nanmin(values) # argmin error when all nan
+                value_min = np.nanmin(values) # nanargmin error when all nan
                 min_mask = values==value_min
                 hit_index = np.argmax(min_mask)
                 min_index[i, j] = filtered_index[hit_index]

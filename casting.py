@@ -99,13 +99,13 @@ def calculate_color(vectors, scene):
 
     # intersections
 
-    #intersection, inter_index  = \
-    #     inter.intersection_ray_triangle(vectors, origin_br, triangles_coord, triangle_nmls)
+    intersection, inter_index  = \
+        inter.intersection_ray_triangle(vectors, origin_br, triangles_coord, triangle_nmls)
     # np.save("./np/intersection.npy", intersection)
     # np.save("./np/inter_index.npy", inter_index)
 
-    intersection = np.load("./np/intersection.npy")
-    inter_index = np.load("./np/inter_index.npy")
+    # intersection = np.load("./np/intersection.npy")
+    # inter_index = np.load("./np/inter_index.npy")
 
     inter_p =  origin_br + (intersection * vectors)
     lights_coord_br = np.broadcast_to(lights_coord, inter_p.shape[:-1] + lights_coord.shape)
@@ -115,14 +115,14 @@ def calculate_color(vectors, scene):
     # shadow
     light_ray =  lights_coord - inter_p[..., na, :]
 
-    # prior_hits = \
-    #     inter.shadow_hit_light(inter_p_br, light_ray, triangles_coord, triangle_nmls, inter_index)
+    prior_hits = \
+        inter.shadow_hit_light(inter_p_br, light_ray, triangles_coord, triangle_nmls, inter_index)
     # np.save("./np/prior_hits.npy", prior_hits)
 
-    prior_hits = np.load("./np/prior_hits.npy")[..., 0]
+    # prior_hits = np.load("./np/prior_hits.npy")[..., 0]
 
-    shadow_mask = np.where(~np.isnan(prior_hits))
-    light_ray[shadow_mask] = np.nan
+    shadow_mask = np.where(~np.isnan(prior_hits)) # everwhere not nan
+    light_ray[shadow_mask] = np.nan # all calculations with light become nan
     # shading
     light_ray_norm = inter.normalize_vector(light_ray)
     angle = inter.vector_angle(light_ray_norm, triangle_nmls[inter_index])
@@ -154,8 +154,8 @@ def calculate_color(vectors, scene):
     ang_power = np.power(light_ref_ang, tri_spec_spr[inter_index][..., na, :])
 
     tri_spec_br = triangles_specular[inter_index]
-    lights_spec_br = np.broadcast_to(lights_specular, \
-                                     tri_spec_br.shape[:-2] + lights_specular.shape)
+    lights_spec_br = np.broadcast_to( \
+        lights_specular, tri_spec_br.shape[:-2] + lights_specular.shape)
     shade_specular_br = lights_spec_br * tri_spec_br * ang_power * phong_dist_div
     shade_spec_light_col = shade_specular_br * lights_color_spec
     shade_specular = np.nansum(shade_spec_light_col, axis=-2)

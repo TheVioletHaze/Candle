@@ -72,13 +72,13 @@ def main():
         triangle_dict = {
             "normal": triangle[0],
             "xyz": triangle[1],
-            "color_ambient": np.array([196, 88, 36]),
-            "color_diffuse": np.array([196, 88, 36]),
+            "color_ambient": np.array([255, 0, 0]),
+            "color_diffuse": np.array([255, 0, 0]),
             "color_specular": np.array([255, 255, 255]), #often white
             "material": "1"
         }
         triangles.append(triangle_dict)
-    triangles = [transform_dict(tri) for tri in triangles]
+    triangles = [transform_dict(tri) for tri in triangles] # properties based on material
 
     lights = [
         {
