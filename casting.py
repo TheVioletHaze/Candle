@@ -119,7 +119,7 @@ def calculate_color(vectors, scene):
     #     inter.shadow_hit_light(inter_p_br, light_ray, triangles_coord, triangle_nmls, inter_index)
     # np.save("./np/prior_hits.npy", prior_hits)
 
-    prior_hits = np.load("./np/prior_hits.npy")
+    prior_hits = np.load("./np/prior_hits.npy")[..., 0]
 
     shadow_mask = np.where(~np.isnan(prior_hits))
     light_ray[shadow_mask] = np.nan
@@ -148,8 +148,9 @@ def calculate_color(vectors, scene):
          np.einsum("...j, ...j -> ...", triangle_nmls[inter_index], light_ray_norm)[..., na]
     light_ref = 2 * light_nml_prj - light_ray_norm
 
-    ray_inter_orig = inter.normalize_vector(inter_p - origin)
+    ray_inter_orig = inter.normalize_vector(origin - inter_p)
     light_ref_ang = inter.vector_angle(light_ref, ray_inter_orig[..., na, :])
+    light_ref_ang = np.where(light_ref_ang > 0, light_ref_ang, np.nan)
     ang_power = np.power(light_ref_ang, tri_spec_spr[inter_index][..., na, :])
 
     tri_spec_br = triangles_specular[inter_index]
